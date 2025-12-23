@@ -1,0 +1,70 @@
+### Dependencies
+node_modules/
+**/node_modules/
+package-lock.json
+
+### Build outputs
+frontend/dist/
+frontend/build/
+backend/dist/
+backend/build/
+ai-service/dist/
+ai-service/build/
+
+### Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+### Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+ai-service/.env
+
+### Python
+**/venv/
+**/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+ai-service/venv/
+ai-service/__pycache__/
+ai-service/.pytest_cache/
+
+### IDE
+.vscode/
+.idea/
+
+### OS junk
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+._*
+
+### Uploads and secrets
+backend/uploads/
+*.pem
+*.key
+*.cert
+
+### Testing
+coverage/
+.nyc_output/
+
+### Temporary files
+*.tmp
+*.temp
+tmp/
+temp/

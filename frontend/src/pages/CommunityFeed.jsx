@@ -1,0 +1,187 @@
+﻿import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+function CommunityFeed({ user, go }) {
+  const [posts, setPosts] = useState([]);
+  const [newPost, setNewPost] = useState('');
+  const [showNewPostModal, setShowNewPostModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/community/posts', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const postsData = Array.isArray(response.data) ? response.data : response.data.posts;
+      setPosts(postsData || []);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      setLoading(false);
+    }
+  };
+
+  const handleCreatePost = async () => {
+    if (!newPost.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/api/community/posts', {
+        content: newPost,
+        interactionType: 'post',
+        visibility: 'public'
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNewPost('');
+      setShowNewPostModal(false);
+      fetchPosts();
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
+  };
+
+  const handleLike = async (postId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`http://localhost:5000/api/community/posts/${postId}/like`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchPosts();
+    } catch (error) {
+      console.error('Error liking post:', error);
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <aside className="hidden w-72 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#111a22] md:flex">
+        <div className="flex flex-col h-full justify-between">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3 px-2 py-2">
+              <div className="aspect-square size-10 rounded-full bg-[#0d93f2]/20 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
+              </div>
+              <div className="flex flex-col">
+                <h1 className="text-base font-bold leading-normal text-slate-900 dark:text-white">{user?.name || 'User'}</h1>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{user?.role || 'Member'}</p>
+              </div>
+            </div>
+            <nav className="flex flex-col gap-2">
+              <button onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : 'investor-dashboard')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                <span className="material-symbols-outlined">dashboard</span>
+                <span className="text-sm font-medium">Dashboard</span>
+              </button>
+              <button className="flex items-center gap-3 rounded-xl bg-[#0d93f2]/10 px-3 py-3 text-[#0d93f2]">
+                <span className="material-symbols-outlined">forum</span>
+                <span className="text-sm font-bold">Community Feed</span>
+              </button>
+              <button onClick={() => go('settings')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                <span className="material-symbols-outlined">settings</span>
+                <span className="text-sm font-medium">Settings</span>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </aside>
+      <main className="flex flex-1 flex-col overflow-y-auto">
+        <header className="border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-[#111a22]">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Community Feed</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Connect with startups and investors</p>
+            </div>
+            <button onClick={() => setShowNewPostModal(true)} className="flex items-center gap-2 rounded-xl bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90">
+              <span className="material-symbols-outlined text-xl">add_circle</span>
+              New Post
+            </button>
+          </div>
+        </header>
+        <div className="flex-1 px-6 py-6">
+          <div className="mx-auto max-w-3xl">
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <div className="text-slate-500">Loading posts...</div>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="rounded-xl border border-slate-200 bg-white p-12 text-center dark:border-slate-800 dark:bg-[#111a22]">
+                <span className="material-symbols-outlined text-6xl text-slate-300 dark:text-slate-600">forum</span>
+                <h3 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">No posts yet</h3>
+                <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Be the first to share something with the community!</p>
+                <button onClick={() => setShowNewPostModal(true)} className="mt-4 rounded-xl bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90">
+                  Create Post
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {posts.map((post) => (
+                  <div key={post._id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#111a22]">
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0d93f2]/20 text-[#0d93f2]">
+                        <span className="material-symbols-outlined">person</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-bold text-slate-900 dark:text-white">{post.userName || 'Anonymous'}</h3>
+                          <span className="text-sm text-slate-500 dark:text-slate-400"></span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400">{post.userRole || 'Member'}</span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400"></span>
+                          <span className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="mt-2 text-slate-700 dark:text-slate-300">{post.content}</p>
+                        {post.tags && post.tags.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {post.tags.map((tag, index) => (
+                              <span key={index} className="rounded-full bg-[#0d93f2]/10 px-3 py-1 text-xs font-medium text-[#0d93f2]">#{tag}</span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="mt-4 flex items-center gap-6">
+                          <button onClick={() => handleLike(post._id)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
+                            <span className="material-symbols-outlined text-xl">favorite</span>
+                            <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+                          </button>
+                          <button className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
+                            <span className="material-symbols-outlined text-xl">mode_comment</span>
+                            <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+                          </button>
+                          <button className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
+                            <span className="material-symbols-outlined text-xl">share</span>
+                            <span className="text-sm font-medium">Share</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+      {showNewPostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="mx-4 w-full max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-[#111a22]">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Create Post</h3>
+              <button onClick={() => setShowNewPostModal(false)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="What's on your mind?" className="w-full rounded-xl border border-slate-300 bg-white p-4 text-slate-900 placeholder-slate-400 focus:border-[#0d93f2] focus:outline-none focus:ring-2 focus:ring-[#0d93f2]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500" rows="6" />
+            <div className="mt-4 flex justify-end gap-3">
+              <button onClick={() => setShowNewPostModal(false)} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">Cancel</button>
+              <button onClick={handleCreatePost} disabled={!newPost.trim()} className="rounded-xl bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90 disabled:opacity-50 disabled:cursor-not-allowed">Post</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default CommunityFeed;

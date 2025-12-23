@@ -1,0 +1,6 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.progress-bar { @apply h-2 rounded bg-gray-200 overflow-hidden; }
+.progress-fill { @apply h-full bg-brand transition-all duration-500; }
