@@ -296,8 +296,9 @@ function InvestorDashboard({ go }) {
           </div>
         </div>
       </div>
-      <div className="p-6 flex flex-col gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+      <div className="px-6 pb-6 flex flex-col xl:flex-row gap-6">
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start mb-4">
             <div className="flex gap-4">
               <div className="size-16 rounded-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
@@ -467,8 +468,8 @@ function InvestorDashboard({ go }) {
               </button>
             </div>
           </div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow opacity-70 hover:opacity-100">
+          </div>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow opacity-70 hover:opacity-100">
           <div className="flex justify-between items-start mb-4">
             <div className="flex gap-4">
               <div className="size-16 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 flex items-center justify-center">
@@ -527,9 +528,9 @@ function InvestorDashboard({ go }) {
               Pass
             </button>
           </div>
+          </div>
         </div>
-      </div>
-      <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex-shrink-0 hidden xl:flex flex-col overflow-y-auto">
+        <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex-shrink-0 hidden xl:flex flex-col overflow-y-auto">
       <div className="p-6 border-b border-slate-100 dark:border-slate-800">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -693,7 +694,8 @@ function InvestorDashboard({ go }) {
           View Full Portfolio
         </button>
       </div>
-    </aside>
+        </aside>
+      </div>
       </main>
     </div>
   );
