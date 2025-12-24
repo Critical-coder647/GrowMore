@@ -1,4 +1,6 @@
 import express from 'express';
+import multer from 'multer';
+import path from 'path';
 import { CommunityInteraction } from '../models/CommunityInteraction.js';
 import { StartupUser } from '../models/StartupUser.js';
 import { InvestorUser } from '../models/InvestorUser.js';
@@ -6,10 +8,42 @@ import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
+// Configure multer for media uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'backend/uploads/');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|mp4|mov|avi|webm/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only image and video files are allowed'));
+  }
+});
+
 // Create a new post
-router.post('/posts', protect, async (req, res) => {
+router.post('/posts', protect, upload.array('media', 10), async (req, res) => {
   try {
-    const { content, media, tags, visibility } = req.body;
+    const { content, tags, visibility } = req.body;
+    
+    // Process uploaded media files
+    const media = req.files ? req.files.map(file => ({
+      url: `/uploads/${file.filename}`,
+      type: file.mimetype.startsWith('image') ? 'image' : 'video',
+      filename: file.filename
+    })) : [];
     
     const post = await CommunityInteraction.create({
       userId: req.user.id,
@@ -19,7 +53,7 @@ router.post('/posts', protect, async (req, res) => {
       interactionType: 'post',
       content,
       media,
-      tags,
+      tags: tags ? (Array.isArray(tags) ? tags : JSON.parse(tags)) : [],
       visibility: visibility || 'public'
     });
     

@@ -6,6 +6,10 @@ function CommunityFeed({ user, go }) {
   const [newPost, setNewPost] = useState('');
   const [showNewPostModal, setShowNewPostModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedMedia, setSelectedMedia] = useState([]);
+  const [mediaPreview, setMediaPreview] = useState([]);
+  const [expandedComments, setExpandedComments] = useState({});
+  const [commentText, setCommentText] = useState({});
 
   useEffect(() => {
     fetchPosts();
@@ -30,14 +34,25 @@ function CommunityFeed({ user, go }) {
     if (!newPost.trim()) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/community/posts', {
-        content: newPost,
-        interactionType: 'post',
-        visibility: 'public'
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
+      const formData = new FormData();
+      formData.append('content', newPost);
+      formData.append('interactionType', 'post');
+      formData.append('visibility', 'public');
+      
+      // Append media files
+      selectedMedia.forEach((file, index) => {
+        formData.append('media', file);
+      });
+      
+      await axios.post('http://localhost:5000/api/community/posts', formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
       });
       setNewPost('');
+      setSelectedMedia([]);
+      setMediaPreview([]);
       setShowNewPostModal(false);
       fetchPosts();
     } catch (error) {
@@ -54,6 +69,67 @@ function CommunityFeed({ user, go }) {
       fetchPosts();
     } catch (error) {
       console.error('Error liking post:', error);
+    }
+  };
+
+  const handleMediaSelect = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedMedia(files);
+    
+    // Generate previews
+    const previews = files.map(file => ({
+      url: URL.createObjectURL(file),
+      type: file.type.startsWith('image') ? 'image' : 'video',
+      name: file.name
+    }));
+    setMediaPreview(previews);
+  };
+
+  const removeMedia = (index) => {
+    setSelectedMedia(prev => prev.filter((_, i) => i !== index));
+    setMediaPreview(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleComments = (postId) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }));
+  };
+
+  const handleAddComment = async (postId) => {
+    const content = commentText[postId];
+    if (!content?.trim()) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`http://localhost:5000/api/community/posts/${postId}/comments`, 
+        { content },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCommentText(prev => ({ ...prev, [postId]: '' }));
+      fetchPosts();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
+
+  const handleShare = async (post) => {
+    const shareData = {
+      title: `Post by ${post.userName}`,
+      text: post.content,
+      url: window.location.href
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        alert('Link copied to clipboard!');
+      }
+    } catch (error) {
+      console.error('Error sharing:', error);
     }
   };
 
@@ -133,6 +209,19 @@ function CommunityFeed({ user, go }) {
                           <span className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString()}</span>
                         </div>
                         <p className="mt-2 text-slate-700 dark:text-slate-300">{post.content}</p>
+                        {post.media && post.media.length > 0 && (
+                          <div className="mt-3 grid grid-cols-2 gap-2">
+                            {post.media.map((mediaItem, index) => (
+                              <div key={index} className="rounded-lg overflow-hidden">
+                                {mediaItem.type === 'image' ? (
+                                  <img src={mediaItem.url} alt="Post media" className="w-full h-48 object-cover" />
+                                ) : (
+                                  <video src={mediaItem.url} controls className="w-full h-48 object-cover" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {post.tags && post.tags.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2">
                             {post.tags.map((tag, index) => (
@@ -145,15 +234,55 @@ function CommunityFeed({ user, go }) {
                             <span className="material-symbols-outlined text-xl">favorite</span>
                             <span className="text-sm font-medium">{post.likes?.length || 0}</span>
                           </button>
-                          <button className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
+                          <button onClick={() => toggleComments(post._id)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
                             <span className="material-symbols-outlined text-xl">mode_comment</span>
                             <span className="text-sm font-medium">{post.comments?.length || 0}</span>
                           </button>
-                          <button className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
+                          <button onClick={() => handleShare(post)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
                             <span className="material-symbols-outlined text-xl">share</span>
                             <span className="text-sm font-medium">Share</span>
                           </button>
                         </div>
+                        {expandedComments[post._id] && (
+                          <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+                            <div className="space-y-3 mb-4">
+                              {post.comments && post.comments.length > 0 ? (
+                                post.comments.map((comment, idx) => (
+                                  <div key={idx} className="flex gap-3">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
+                                      <span className="material-symbols-outlined text-sm">person</span>
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="rounded-lg bg-slate-50 dark:bg-slate-800 px-3 py-2">
+                                        <p className="text-xs font-bold text-slate-900 dark:text-white">{comment.userName}</p>
+                                        <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
+                                      </div>
+                                      <p className="text-xs text-slate-400 mt-1">{new Date(comment.createdAt).toLocaleString()}</p>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-slate-500 text-center">No comments yet. Be the first to comment!</p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={commentText[post._id] || ''}
+                                onChange={(e) => setCommentText(prev => ({ ...prev, [post._id]: e.target.value }))}
+                                onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post._id)}
+                                placeholder="Write a comment..."
+                                className="flex-1 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#0d93f2] focus:outline-none focus:ring-2 focus:ring-[#0d93f2]/20"
+                              />
+                              <button
+                                onClick={() => handleAddComment(post._id)}
+                                className="rounded-lg bg-[#0d93f2] px-4 py-2 text-sm font-bold text-white hover:bg-[#0d93f2]/90"
+                              >
+                                Send
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -173,9 +302,56 @@ function CommunityFeed({ user, go }) {
               </button>
             </div>
             <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="What's on your mind?" className="w-full rounded-xl border border-slate-300 bg-white p-4 text-slate-900 placeholder-slate-400 focus:border-[#0d93f2] focus:outline-none focus:ring-2 focus:ring-[#0d93f2]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder-slate-500" rows="6" />
-            <div className="mt-4 flex justify-end gap-3">
-              <button onClick={() => setShowNewPostModal(false)} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">Cancel</button>
-              <button onClick={handleCreatePost} disabled={!newPost.trim()} className="rounded-xl bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90 disabled:opacity-50 disabled:cursor-not-allowed">Post</button>
+            
+            {mediaPreview.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {mediaPreview.map((preview, index) => (
+                  <div key={index} className="relative rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700">
+                    {preview.type === 'image' ? (
+                      <img src={preview.url} alt={preview.name} className="w-full h-32 object-cover" />
+                    ) : (
+                      <video src={preview.url} className="w-full h-32 object-cover" />
+                    )}
+                    <button
+                      onClick={() => removeMedia(index)}
+                      className="absolute top-1 right-1 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                    >
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex gap-2">
+                <label className="cursor-pointer rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-xl">image</span>
+                  <span>Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleMediaSelect}
+                    className="hidden"
+                  />
+                </label>
+                <label className="cursor-pointer rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-xl">videocam</span>
+                  <span>Video</span>
+                  <input
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    onChange={handleMediaSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => { setShowNewPostModal(false); setSelectedMedia([]); setMediaPreview([]); }} className="rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700">Cancel</button>
+                <button onClick={handleCreatePost} disabled={!newPost.trim()} className="rounded-xl bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90 disabled:opacity-50 disabled:cursor-not-allowed">Post</button>
+              </div>
             </div>
           </div>
         </div>

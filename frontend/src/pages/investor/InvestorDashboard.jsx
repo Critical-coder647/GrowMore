@@ -281,7 +281,8 @@ function InvestorDashboard({ go }) {
         </div>
         <div className="mt-2 border-b border-slate-200 dark:border-slate-700">
           <div className="flex gap-8">
-            <button className="relative pb-3 pt-2 text-primary text-sm font-bold border-b-[3px] border-primary">
+            
+            <button className="relative pb-3 pt-2 text-slate-500 dark:text-slate-400 text-sm font-medium border-b-[3px] border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
               Recommended Startups
             </button>
             <button className="relative pb-3 pt-2 text-slate-500 dark:text-slate-400 text-sm font-medium border-b-[3px] border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
