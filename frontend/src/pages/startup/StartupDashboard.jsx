@@ -10,6 +10,7 @@ function StartupDashboard({ user, go }) {
   });
   
   const [applications, setApplications] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
   
   useEffect(() => {
     // Mock data - in production, fetch from API
@@ -42,7 +43,25 @@ function StartupDashboard({ user, go }) {
         statusColor: 'green'
       }
     ]);
+    
+    // Fetch notification count
+    fetchNotificationCount();
+    // Poll for notification updates every 30 seconds
+    const interval = setInterval(fetchNotificationCount, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchNotificationCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/notifications/unread-count', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Error fetching notification count:', error);
+    }
+  };
 
 
 
@@ -81,10 +100,12 @@ function StartupDashboard({ user, go }) {
                     <span className="material-symbols-outlined">forum</span>
                     <span className="text-sm font-medium">Community Feed</span>
                   </button>
-                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <button onClick={() => go('notifications')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <div className="relative">
                       <span className="material-symbols-outlined">notifications</span>
-                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111a22]">3</span>
+                      {notificationCount > 0 && (
+                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111a22]">{notificationCount}</span>
+                      )}
                     </div>
                     <span className="text-sm font-medium">Notifications</span>
                   </button>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
 import StartupDashboard from './pages/startup/StartupDashboard.jsx';
@@ -7,6 +7,7 @@ import Landing from './pages/Landing.jsx';
 import InvestorDashboard from './pages/investor/InvestorDashboard.jsx';
 import CommunityFeed from './pages/CommunityFeed.jsx';
 import Settings from './pages/Settings.jsx';
+import NotificationPage from './pages/Notficationpg.jsx';
 
 export default function App() {
   const storedToken = localStorage.getItem('token');
@@ -25,6 +26,16 @@ export default function App() {
   const [user, setUser] = useState(storedToken && storedUser && storedUser !== 'null' ? JSON.parse(storedUser) : null);
   const go = v => setView(v);
 
+  // Apply saved theme on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
   function handleAuth({ token, user }) {
     setToken(token);
     setUser(user);
@@ -37,12 +48,12 @@ export default function App() {
 
   function logout() {
     localStorage.clear();
-    setToken(null); setUser(null); setView('login');
+    setToken(null); setUser(null); setView('landing');
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f7f8] dark:bg-[#101b22]">
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'landing' && view !== 'register' && view !== 'settings' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'landing' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && (
         <nav className="sticky top-0 z-50 bg-[#f5f7f8]/90 dark:bg-[#101b22]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
           <div className="flex justify-center w-full">
             <div className="flex items-center justify-between w-full max-w-7xl px-6 py-4">
@@ -100,7 +111,8 @@ export default function App() {
         {token && view === 'startup-dashboard' && <StartupDashboard user={user} go={go} />}
         {token && view === 'investor-dashboard' && <InvestorDashboard user={user} go={go} />}
         {token && view === 'community' && <CommunityFeed user={user} go={go} />}
-        {token && view === 'settings' && <Settings user={user} go={go} />}
+        {token && view === 'notifications' && <NotificationPage user={user} go={go} />}
+        {token && view === 'settings' && <Settings user={user} go={go} logout={logout} />}
         {token && view === 'matching' && <div className="max-w-6xl mx-auto p-6"><MatchingPage user={user} go={go} /></div>}
       </main>
       {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'landing' && view !== 'register' && view !== 'community' && view !== 'settings' && (

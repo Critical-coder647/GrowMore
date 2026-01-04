@@ -4,6 +4,7 @@ import axios from 'axios';
 function InvestorDashboard({ go }) {
   const [user, setUser] = useState(null);
   const [deals, setDeals] = useState([]);
+  const [notificationCount, setNotificationCount] = useState(0);
   const [stats, setStats] = useState({
     totalInvested: '$4.2M',
     activeDeals: 12,
@@ -52,7 +53,25 @@ function InvestorDashboard({ go }) {
         daysLeft: 20
       }
     ]);
+    
+    // Fetch notification count
+    fetchNotificationCount();
+    // Poll for notification updates every 30 seconds
+    const interval = setInterval(fetchNotificationCount, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  const fetchNotificationCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/notifications/unread-count', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificationCount(response.data.count || 0);
+    } catch (error) {
+      console.error('Error fetching notification count:', error);
+    }
+  };
 
 
 
@@ -120,6 +139,7 @@ function InvestorDashboard({ go }) {
                 <p className="text-sm font-medium leading-normal">Messages</p>
               </button>
               <button
+                onClick={() => go('notifications')}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
@@ -127,9 +147,11 @@ function InvestorDashboard({ go }) {
                 </span>
                 <div className="flex flex-1 items-center justify-between">
                   <p className="text-sm font-medium leading-normal">Notifications</p>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                    3
-                  </span>
+                  {notificationCount > 0 && (
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                      {notificationCount}
+                    </span>
+                  )}
                 </div>
               </button>
               <button

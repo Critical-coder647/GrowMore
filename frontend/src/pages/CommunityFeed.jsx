@@ -10,6 +10,9 @@ function CommunityFeed({ user, go }) {
   const [mediaPreview, setMediaPreview] = useState([]);
   const [expandedComments, setExpandedComments] = useState({});
   const [commentText, setCommentText] = useState({});
+  const [openMenuPostId, setOpenMenuPostId] = useState(null);
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editContent, setEditContent] = useState('');
 
   useEffect(() => {
     fetchPosts();
@@ -133,11 +136,67 @@ function CommunityFeed({ user, go }) {
     }
   };
 
+  const handleDeletePost = async (postId) => {
+    if (!confirm('Are you sure you want to delete this post?')) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/community/posts/${postId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setOpenMenuPostId(null);
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post');
+    }
+  };
+
+  const handleStartEdit = (post) => {
+    setEditingPostId(post._id);
+    setEditContent(post.content);
+    setOpenMenuPostId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingPostId(null);
+    setEditContent('');
+  };
+
+  const handleUpdatePost = async (postId) => {
+    if (!editContent.trim()) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/community/posts/${postId}`, 
+        { content: editContent },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setEditingPostId(null);
+      setEditContent('');
+      fetchPosts();
+    } catch (error) {
+      console.error('Error updating post:', error);
+      alert('Failed to update post');
+    }
+  };
+
+  const toggleMenu = (postId) => {
+    setOpenMenuPostId(openMenuPostId === postId ? null : postId);
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
       <aside className="hidden w-72 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#111a22] md:flex">
         <div className="flex flex-col h-full justify-between">
           <div className="flex flex-col gap-6">
+            <button 
+              onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : 'investor-dashboard')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-fit"
+            >
+              <span className="material-symbols-outlined">arrow_back</span>
+              <span className="text-sm font-medium">Back to Dashboard</span>
+            </button>
             <div className="flex items-center gap-3 px-2 py-2">
               <div className="aspect-square size-10 rounded-full bg-[#0d93f2]/20 flex items-center justify-center">
                 <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
@@ -201,22 +260,57 @@ function CommunityFeed({ user, go }) {
                         <span className="material-symbols-outlined">person</span>
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-bold text-slate-900 dark:text-white">{post.userName || 'Anonymous'}</h3>
-                          <span className="text-sm text-slate-500 dark:text-slate-400"></span>
-                          <span className="text-sm text-slate-500 dark:text-slate-400">{post.userRole || 'Member'}</span>
-                          <span className="text-sm text-slate-500 dark:text-slate-400"></span>
-                          <span className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-slate-900 dark:text-white">{post.userName || 'Anonymous'}</h3>
+                            <span className="text-sm text-slate-500 dark:text-slate-400"></span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400">{post.userRole || 'Member'}</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400"></span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          {post.userId === user?.id && (
+                            <div className="relative">
+                              <button onClick={() => toggleMenu(post._id)} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+                                <span className="material-symbols-outlined">more_vert</span>
+                              </button>
+                              {openMenuPostId === post._id && (
+                                <div className="absolute right-0 mt-2 w-48 rounded-lg bg-white dark:bg-slate-800 shadow-lg border border-slate-200 dark:border-slate-700 z-10">
+                                  <button onClick={() => handleStartEdit(post)} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-lg">edit</span>
+                                    Edit Post
+                                  </button>
+                                  <button onClick={() => handleDeletePost(post._id)} className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                    Delete Post
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        <p className="mt-2 text-slate-700 dark:text-slate-300">{post.content}</p>
+                        {editingPostId === post._id ? (
+                          <div className="mt-2">
+                            <textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} className="w-full rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 p-3 text-slate-900 dark:text-white focus:border-[#0d93f2] focus:outline-none" rows="3" />
+                            <div className="mt-2 flex gap-2">
+                              <button onClick={() => handleUpdatePost(post._id)} className="rounded-lg bg-[#0d93f2] px-4 py-2 text-sm font-bold text-white hover:bg-[#0d93f2]/90">
+                                Save
+                              </button>
+                              <button onClick={handleCancelEdit} className="rounded-lg border border-slate-300 dark:border-slate-600 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800">
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-slate-700 dark:text-slate-300">{post.content}</p>
+                        )}
                         {post.media && post.media.length > 0 && (
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             {post.media.map((mediaItem, index) => (
                               <div key={index} className="rounded-lg overflow-hidden">
                                 {mediaItem.type === 'image' ? (
-                                  <img src={mediaItem.url} alt="Post media" className="w-full h-48 object-cover" />
+                                  <img src={`http://localhost:5000${mediaItem.url}`} alt="Post media" className="w-full h-48 object-cover" />
                                 ) : (
-                                  <video src={mediaItem.url} controls className="w-full h-48 object-cover" />
+                                  <video src={`http://localhost:5000${mediaItem.url}`} controls className="w-full h-48 object-cover" />
                                 )}
                               </div>
                             ))}

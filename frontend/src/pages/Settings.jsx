@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-function Settings({ user, go }) {
+function Settings({ user, go, logout }) {
   const [activeTab, setActiveTab] = useState('profile');
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme || 'light';
+  });
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
     lastName: user?.name?.split(' ')[1] || '',
@@ -15,6 +20,21 @@ function Settings({ user, go }) {
     website: ''
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Apply theme on mount and when it changes
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+    console.log('Theme changed to:', theme, 'Dark class present:', document.documentElement.classList.contains('dark'));
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -33,13 +53,65 @@ function Settings({ user, go }) {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    go('landing');
+    setShowLogoutModal(true);
+  };
+
+  const confirmLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+  };
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false);
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#0f1419]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <>
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-[#1a1f26] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full mx-4 overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-red-600 dark:text-red-400 text-2xl">logout</span>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">Confirm Logout</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Are you sure you want to leave?</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <p className="text-slate-600 dark:text-slate-400">
+                You will be signed out of your account. Any unsaved changes will be lost.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 flex gap-3 justify-end">
+              <button
+                onClick={cancelLogout}
+                className="px-6 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmLogout}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-lg">logout</span>
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#0f1419]" style={{ fontFamily: 'Manrope, sans-serif' }}>
       {/* Sidebar */}
       <aside className="w-64 bg-white dark:bg-[#1a1f26] border-r border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
@@ -125,6 +197,18 @@ function Settings({ user, go }) {
           >
             <span className="material-symbols-outlined text-xl">extension</span>
             <span className="text-sm font-medium">Integrations</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('preferences')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
+              activeTab === 'preferences'
+                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            <span className="material-symbols-outlined text-xl">tune</span>
+            <span className="text-sm font-medium">Preferences</span>
           </button>
         </nav>
 
@@ -514,9 +598,94 @@ function Settings({ user, go }) {
               <p className="mt-2 text-slate-600 dark:text-slate-400">Integration options coming soon...</p>
             </div>
           )}
+
+          {activeTab === 'preferences' && (
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Preferences</h1>
+              <p className="text-slate-500 dark:text-slate-400 mb-6">Customize your experience</p>
+
+              <div className="bg-white dark:bg-[#1a1f26] rounded-xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700">
+                {/* Theme Toggle */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Theme</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Choose between light and dark mode
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg p-1">
+                        <button
+                          onClick={() => setTheme('light')}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            theme === 'light'
+                              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-lg">light_mode</span>
+                          Light
+                        </button>
+                        <button
+                          onClick={() => setTheme('dark')}
+                          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                            theme === 'dark'
+                              ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm'
+                              : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-lg">dark_mode</span>
+                          Dark
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Language */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Language</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Select your preferred language
+                      </p>
+                    </div>
+                    <select className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>English</option>
+                      <option>Spanish</option>
+                      <option>French</option>
+                      <option>German</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Timezone */}
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="text-base font-semibold text-slate-900 dark:text-white mb-1">Timezone</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Set your local timezone
+                      </p>
+                    </div>
+                    <select className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <option>UTC (GMT+0)</option>
+                      <option>EST (GMT-5)</option>
+                      <option>PST (GMT-8)</option>
+                      <option>CET (GMT+1)</option>
+                      <option>IST (GMT+5:30)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
+    </>
   );
 }
 

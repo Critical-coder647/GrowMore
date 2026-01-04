@@ -4,6 +4,7 @@ import path from 'path';
 import { CommunityInteraction } from '../models/CommunityInteraction.js';
 import { StartupUser } from '../models/StartupUser.js';
 import { InvestorUser } from '../models/InvestorUser.js';
+import { Notification } from '../models/Notification.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -115,6 +116,22 @@ router.post('/posts/:id/like', protect, async (req, res) => {
         userId: req.user.id,
         userType: req.user.role === 'startup' ? 'StartupUser' : 'InvestorUser'
       });
+      
+      // Create notification for post owner if it's not their own post
+      if (post.userId.toString() !== req.user.id) {
+        await Notification.create({
+          recipientId: post.userId,
+          recipientType: post.userType,
+          senderId: req.user.id,
+          senderType: req.user.role === 'startup' ? 'StartupUser' : 'InvestorUser',
+          senderName: req.user.name,
+          type: 'like',
+          title: 'New Like',
+          message: `${req.user.name} liked your post`,
+          link: '/community',
+          metadata: { postId: post._id }
+        });
+      }
     }
     
     await post.save();
@@ -139,6 +156,22 @@ router.post('/posts/:id/comments', protect, async (req, res) => {
       content
     });
     
+    // Create notification for post owner if it's not their own post
+    if (post.userId.toString() !== req.user.id) {
+      await Notification.create({
+        recipientId: post.userId,
+        recipientType: post.userType,
+        senderId: req.user.id,
+        senderType: req.user.role === 'startup' ? 'StartupUser' : 'InvestorUser',
+        senderName: req.user.name,
+        type: 'comment',
+        title: 'New Comment',
+        message: `${req.user.name} commented on your post: "${content.substring(0, 50)}${content.length > 50 ? '...' : ''}"`,
+        link: '/community',
+        metadata: { postId: post._id }
+      });
+    }
+    
     await post.save();
     res.json(post);
   } catch (err) {
@@ -156,6 +189,27 @@ router.get('/users/:userId/posts', protect, async (req, res) => {
     }).sort({ createdAt: -1 });
     
     res.json(posts);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Update post
+router.put('/posts/:id', protect, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const post = await CommunityInteraction.findById(req.params.id);
+    
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    
+    if (post.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorized to update this post' });
+    }
+    
+    post.content = content;
+    await post.save();
+    
+    res.json(post);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
