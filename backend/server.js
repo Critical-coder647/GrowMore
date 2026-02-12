@@ -10,6 +10,8 @@ import investorRoutes from './routes/investors.js';
 import aiRoutes from './routes/ai.js';
 import communityRoutes from './routes/community.js';
 import notificationRoutes from './routes/notifications.js';
+import connectionRoutes from './routes/connections.js';
+import adminRoutes from './routes/admin.js';
 
 dotenv.config();
 
@@ -30,6 +32,8 @@ app.use('/api/investors', investorRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/connections', connectionRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 

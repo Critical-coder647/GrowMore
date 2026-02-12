@@ -4,7 +4,6 @@ import axios from 'axios';
 function InvestorDashboard({ go }) {
   const [user, setUser] = useState(null);
   const [deals, setDeals] = useState([]);
-  const [notificationCount, setNotificationCount] = useState(0);
   const [stats, setStats] = useState({
     totalInvested: '$4.2M',
     activeDeals: 12,
@@ -53,25 +52,7 @@ function InvestorDashboard({ go }) {
         daysLeft: 20
       }
     ]);
-    
-    // Fetch notification count
-    fetchNotificationCount();
-    // Poll for notification updates every 30 seconds
-    const interval = setInterval(fetchNotificationCount, 30000);
-    return () => clearInterval(interval);
   }, []);
-
-  const fetchNotificationCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/notifications/unread-count', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotificationCount(response.data.count || 0);
-    } catch (error) {
-      console.error('Error fetching notification count:', error);
-    }
-  };
 
 
 
@@ -105,23 +86,22 @@ function InvestorDashboard({ go }) {
                 </span>
                 <p className="text-sm font-bold leading-normal">Dashboard</p>
               </button>
-             <button
+              <button
+                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
+                  trending_up
+                </span>
+                <p className="text-sm font-medium leading-normal">Deal Flow</p>
+              </button>
+              <button
                 onClick={() => go('investor-profile')}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  person
+                  pie_chart
                 </span>
                 <p className="text-sm font-medium leading-normal">Profile</p>
-              </button>
-              <button
-                onClick={() => go('investor-connect')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  rocket_launch
-                </span>
-                <p className="text-sm font-medium leading-normal">Discover Startups</p>
               </button>
               <button
                 onClick={() => go('community')}
@@ -142,7 +122,6 @@ function InvestorDashboard({ go }) {
                 <p className="text-sm font-medium leading-normal">Messages</p>
               </button>
               <button
-                onClick={() => go('notifications')}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
@@ -150,11 +129,9 @@ function InvestorDashboard({ go }) {
                 </span>
                 <div className="flex flex-1 items-center justify-between">
                   <p className="text-sm font-medium leading-normal">Notifications</p>
-                  {notificationCount > 0 && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                      {notificationCount}
-                    </span>
-                  )}
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                    3
+                  </span>
                 </div>
               </button>
               <button
@@ -306,8 +283,7 @@ function InvestorDashboard({ go }) {
         </div>
         <div className="mt-2 border-b border-slate-200 dark:border-slate-700">
           <div className="flex gap-8">
-            
-            <button className="relative pb-3 pt-2 text-slate-500 dark:text-slate-400 text-sm font-medium border-b-[3px] border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+            <button className="relative pb-3 pt-2 text-primary text-sm font-bold border-b-[3px] border-primary">
               Recommended Startups
             </button>
             <button className="relative pb-3 pt-2 text-slate-500 dark:text-slate-400 text-sm font-medium border-b-[3px] border-transparent hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
@@ -322,9 +298,8 @@ function InvestorDashboard({ go }) {
           </div>
         </div>
       </div>
-      <div className="px-6 pb-6 flex flex-col xl:flex-row gap-6">
-        <div className="flex-1 flex flex-col gap-6">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
+      <div className="p-6 flex flex-col gap-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start mb-4">
             <div className="flex gap-4">
               <div className="size-16 rounded-xl bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center overflow-hidden">
@@ -494,8 +469,8 @@ function InvestorDashboard({ go }) {
               </button>
             </div>
           </div>
-          </div>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow opacity-70 hover:opacity-100">
+        </div>
+        <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow opacity-70 hover:opacity-100">
           <div className="flex justify-between items-start mb-4">
             <div className="flex gap-4">
               <div className="size-16 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900/50 flex items-center justify-center">
@@ -554,9 +529,9 @@ function InvestorDashboard({ go }) {
               Pass
             </button>
           </div>
-          </div>
         </div>
-        <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex-shrink-0 hidden xl:flex flex-col overflow-y-auto">
+      </div>
+      <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex-shrink-0 hidden xl:flex flex-col overflow-y-auto">
       <div className="p-6 border-b border-slate-100 dark:border-slate-800">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
@@ -720,8 +695,7 @@ function InvestorDashboard({ go }) {
           View Full Portfolio
         </button>
       </div>
-        </aside>
-      </div>
+    </aside>
       </main>
     </div>
   );

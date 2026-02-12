@@ -1,39 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Helper function to determine which step to resume from
-const getIncompleteProfileStep = () => {
-  const saved = localStorage.getItem('profileSetupData');
-  if (!saved) {
-    return 'profile-step-1'; // Start from beginning if no data
-  }
-  
-  try {
-    const data = JSON.parse(saved);
-    
-    // Check Step 1 completion (Basic Details)
-    if (!data.companyName || !data.industry) {
-      return 'profile-step-1';
-    }
-    
-    // Check Step 2 completion (Business Details)
-    if (!data.problemStatement || !data.solution) {
-      return 'profile-step-2';
-    }
-    
-    // Check Step 3 completion (Funding Requirements)
-    if (!data.fundingGoal || !data.fundingPurpose) {
-      return 'profile-step-3';
-    }
-    
-    // If all steps are complete, return null (profile is complete)
-    return null;
-  } catch (error) {
-    console.error('Error checking profile completion:', error);
-    return 'profile-step-1';
-  }
-};
-
 function StartupDashboard({ user, go }) {
   const [stats, setStats] = useState({
     totalRaised: '$1.2M',
@@ -43,18 +10,8 @@ function StartupDashboard({ user, go }) {
   });
   
   const [applications, setApplications] = useState([]);
-  const [notificationCount, setNotificationCount] = useState(0);
-  const [showProfileIncompleteAlert, setShowProfileIncompleteAlert] = useState(false);
-  const [resumeStep, setResumeStep] = useState(null);
   
   useEffect(() => {
-    // Check if profile setup is incomplete
-    const incompleteStep = getIncompleteProfileStep();
-    if (incompleteStep) {
-      setShowProfileIncompleteAlert(true);
-      setResumeStep(incompleteStep);
-    }
-    
     // Mock data - in production, fetch from API
     setApplications([
       {
@@ -85,25 +42,7 @@ function StartupDashboard({ user, go }) {
         statusColor: 'green'
       }
     ]);
-    
-    // Fetch notification count
-    fetchNotificationCount();
-    // Poll for notification updates every 30 seconds
-    const interval = setInterval(fetchNotificationCount, 30000);
-    return () => clearInterval(interval);
   }, []);
-
-  const fetchNotificationCount = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/notifications/unread-count', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setNotificationCount(response.data.count || 0);
-    } catch (error) {
-      console.error('Error fetching notification count:', error);
-    }
-  };
 
 
 
@@ -126,15 +65,15 @@ function StartupDashboard({ user, go }) {
                     <span className="material-symbols-outlined fill-1" style={{fontVariationSettings: '"FILL" 1'}}>dashboard</span>
                     <span className="text-sm font-bold">Dashboard</span>
                   </button>
-                  <button onClick={() => go('startup-profile')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">person</span>
-                    <span className="text-sm font-medium">My Startup Profile</span>
+                    <span className="text-sm font-medium"> Profile</span>
                   </button>
                   <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">monetization_on</span>
                     <span className="text-sm font-medium">Funding Requests</span>
                   </button>
-                  <button onClick={() => go('startup-connect')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">groups</span>
                     <span className="text-sm font-medium">Investor Connect</span>
                   </button>
@@ -142,18 +81,16 @@ function StartupDashboard({ user, go }) {
                     <span className="material-symbols-outlined">forum</span>
                     <span className="text-sm font-medium">Community Feed</span>
                   </button>
-                  <button onClick={() => go('messages')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">chat</span>
-                    <span className="text-sm font-medium">Messages</span>
-                  </button>
-                  <button onClick={() => go('notifications')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <div className="relative">
                       <span className="material-symbols-outlined">notifications</span>
-                      {notificationCount > 0 && (
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111a22]">{notificationCount}</span>
-                      )}
+                      <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111a22]">3</span>
                     </div>
                     <span className="text-sm font-medium">Notifications</span>
+                  </button>
+                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                    <span className="material-symbols-outlined">settings</span>
+                    <span className="text-sm font-medium">Settings</span>
                   </button>
                   <button onClick={() => go('settings')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">settings</span>
@@ -202,45 +139,6 @@ function StartupDashboard({ user, go }) {
                   </button>
                 </div>
               </div>
-              
-              {/* Incomplete Profile Alert */}
-              {showProfileIncompleteAlert && resumeStep && (
-                <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20">
-                  <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 mt-0.5">
-                    warning
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="text-base font-bold text-amber-900 dark:text-amber-200 mb-1">
-                      Complete Your Profile Setup
-                    </h3>
-                    <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
-                      You haven't completed your startup profile yet. Complete your profile to start connecting with investors and showcase your startup to the community.
-                    </p>
-                    <div className="flex gap-3">
-                      <button 
-                        onClick={() => go(resumeStep)}
-                        className="flex items-center gap-2 rounded-lg bg-amber-600 hover:bg-amber-700 px-4 py-2 text-sm font-bold text-white transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">play_arrow</span>
-                        Resume Setup
-                      </button>
-                      <button 
-                        onClick={() => setShowProfileIncompleteAlert(false)}
-                        className="flex items-center gap-2 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700 px-4 py-2 text-sm font-bold text-amber-900 dark:text-amber-200 hover:bg-amber-50 dark:hover:bg-slate-700 transition-colors"
-                      >
-                        Remind Me Later
-                      </button>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={() => setShowProfileIncompleteAlert(false)}
-                    className="text-amber-600 dark:text-amber-500 hover:text-amber-800 dark:hover:text-amber-300"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">close</span>
-                  </button>
-                </div>
-              )}
-
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-[#111a22]">
                   <div className="flex items-center justify-between">

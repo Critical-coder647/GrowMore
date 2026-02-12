@@ -1,4 +1,5 @@
 import React from 'react';
+import logoGM from '../../asset/logoGM.png';
 
 function Landing({ go }) {
   const handleLogin = () => {
@@ -12,18 +13,21 @@ function Landing({ go }) {
   return (
     <div className="relative flex h-auto min-h-screen w-full flex-col bg-[#f5f7f8] dark:bg-[#101b22] text-slate-900 dark:text-white overflow-x-hidden antialiased"
       style={{ fontFamily: 'Manrope, sans-serif' }}>
-    {/* FundConnect Navigation */}
+    {/* GrowMore Navigation */}
     <header className="sticky top-0 z-50 bg-[#f5f7f8]/90 dark:bg-[#101b22]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
       <div className="flex justify-center w-full">
         <div className="flex items-center justify-between w-full max-w-7xl px-4 py-4 lg:px-8">
           <div className="flex items-center gap-2 cursor-pointer">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#0d93f2]/10 text-[#0d93f2]">
-              <span className="material-symbols-outlined text-2xl">
-                rocket_launch
-              </span>
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-[#0d93f2]/10">
+              <img
+                src={logoGM}
+                alt="GrowMore logo"
+                className="w-7 h-7 object-contain"
+                loading="lazy"
+              />
             </div>
             <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">
-              FundConnect
+              GrowMore
             </h2>
           </div>
           <div className="hidden lg:flex items-center gap-8">
@@ -204,7 +208,7 @@ function Landing({ go }) {
         <div className="max-w-7xl w-full px-4 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-              How FundConnect Works
+              How GrowMore Works
             </h2>
             <p className="text-slate-600 dark:text-slate-400">
               Whether you're building the future or funding it, we've
@@ -498,7 +502,7 @@ function Landing({ go }) {
                 </span>
               </div>
               <p className="text-slate-600 dark:text-slate-300 mb-6 italic">
-                "FundConnect made it incredibly easy to reach investors who
+                "GrowMore made it incredibly easy to reach investors who
                 actually understood our niche. We closed our seed round in 3
                 weeks."
               </p>
@@ -638,10 +642,15 @@ function Landing({ go }) {
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-12">
             <div className="col-span-2 lg:col-span-2">
               <div className="flex items-center gap-2 mb-4 text-slate-900 dark:text-white">
-                <span className="material-symbols-outlined text-2xl text-[#0d93f2]">
-                  rocket_launch
-                </span>
-                <span className="text-xl font-bold">FundConnect</span>
+                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#0d93f2]/10">
+                  <img
+                    src={logoGM}
+                    alt="GrowMore logo"
+                    className="w-6 h-6 object-contain"
+                    loading="lazy"
+                  />
+                </div>
+                <span className="text-xl font-bold">GrowMore</span>
               </div>
               <p className="text-slate-500 text-sm leading-relaxed max-w-xs mb-6">
                 Connecting visionary startups with forward-thinking investors.
@@ -752,7 +761,7 @@ function Landing({ go }) {
           </div>
           <div className="pt-8 border-t border-slate-200 dark:border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-xs text-slate-400 text-center md:text-left">
-              © 2023 FundConnect Inc. All rights reserved.
+              © 2023 GrowMore Inc. All rights reserved.
             </p>
             <div className="flex gap-6 text-xs text-slate-400">
               <span>

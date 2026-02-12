@@ -61,7 +61,7 @@ function Login({ onAuth, go }) {
             </svg>
           </div>
           <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">
-            FundConnect
+            GrowMore
           </h2>
         </div>
         <div className="hidden sm:flex text-sm font-medium text-slate-600 dark:text-slate-400">

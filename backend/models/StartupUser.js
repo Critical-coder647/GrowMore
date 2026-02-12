@@ -21,7 +21,9 @@ const startupUserSchema = new mongoose.Schema({
   location: { type: String },
   founders: [{ type: String }],
   website: { type: String },
-  pastActivity: [{ type: String }]
+  pastActivity: [{ type: String }],
+  suspendedUntil: { type: Date },
+  suspensionReason: { type: String }
 }, { timestamps: true });
 
 startupUserSchema.pre('save', async function(next) {

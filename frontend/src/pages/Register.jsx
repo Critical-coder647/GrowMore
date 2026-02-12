@@ -47,7 +47,7 @@ function Register({ onAuth, go }) {
               <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#0d93f2]/20 backdrop-blur-sm border border-white/10">
                 <span className="material-symbols-outlined text-white">rocket_launch</span>
               </div>
-              <h2 className="text-xl font-bold tracking-tight">FundConnect</h2>
+              <h2 className="text-xl font-bold tracking-tight">GrowMore</h2>
             </div>
             {/* Main Content Area */}
             <div className="relative z-10 flex flex-col gap-10 mt-auto mb-10">
@@ -89,7 +89,7 @@ function Register({ onAuth, go }) {
             <div className="lg:hidden flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2 text-[#0d161c] dark:text-white cursor-pointer" onClick={() => go('landing')}>
                 <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
-                <span className="font-bold text-lg">FundConnect</span>
+                <span className="font-bold text-lg">GrowMore</span>
               </div>
             </div>
             <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 lg:p-24">

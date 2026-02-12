@@ -42,7 +42,20 @@ const communityInteractionSchema = new mongoose.Schema({
     enum: ['public', 'connections', 'private'], 
     default: 'public' 
   },
-  isActive: { type: Boolean, default: true }
+  isActive: { type: Boolean, default: true },
+  reportStatus: {
+    type: String,
+    enum: ['open', 'dismissed', 'resolved'],
+    default: 'open'
+  },
+  reports: [{
+    reporterId: { type: mongoose.Schema.Types.ObjectId, refPath: 'reporterType' },
+    reporterType: { type: String, enum: ['StartupUser', 'InvestorUser'] },
+    reporterName: { type: String },
+    reason: { type: String },
+    details: { type: String },
+    createdAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
 
 // Index for faster queries

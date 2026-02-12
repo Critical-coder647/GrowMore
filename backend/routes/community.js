@@ -5,7 +5,7 @@ import { CommunityInteraction } from '../models/CommunityInteraction.js';
 import { StartupUser } from '../models/StartupUser.js';
 import { InvestorUser } from '../models/InvestorUser.js';
 import { Notification } from '../models/Notification.js';
-import { protect } from '../middleware/auth.js';
+import { protect, auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -91,6 +91,42 @@ router.get('/posts/:id', protect, async (req, res) => {
   try {
     const post = await CommunityInteraction.findById(req.params.id);
     if (!post) return res.status(404).json({ message: 'Post not found' });
+    res.json(post);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Report a post
+router.post('/posts/:id/report', protect, async (req, res) => {
+  try {
+    const { reason, details } = req.body;
+    const post = await CommunityInteraction.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    post.reports.push({
+      reporterId: req.user.id,
+      reporterType: req.user.role === 'startup' ? 'StartupUser' : 'InvestorUser',
+      reporterName: req.user.name,
+      reason,
+      details
+    });
+    post.reportStatus = 'open';
+    await post.save();
+
+    res.json({ message: 'Report submitted' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// Dismiss reports (admin)
+router.post('/posts/:id/dismiss-report', auth(['admin']), async (req, res) => {
+  try {
+    const post = await CommunityInteraction.findById(req.params.id);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    post.reportStatus = 'dismissed';
+    await post.save();
     res.json(post);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -222,11 +258,14 @@ router.delete('/posts/:id', protect, async (req, res) => {
     
     if (!post) return res.status(404).json({ message: 'Post not found' });
     
-    if (post.userId.toString() !== req.user.id) {
+    if (post.userId.toString() !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ message: 'Not authorized to delete this post' });
     }
     
     post.isActive = false;
+    if (req.user.role === 'admin') {
+      post.reportStatus = 'resolved';
+    }
     await post.save();
     
     res.json({ message: 'Post deleted successfully' });

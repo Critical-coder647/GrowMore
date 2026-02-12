@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: growmore-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TOKEN_EXPIRY
+        value: 7d
+      - key: AI_SERVICE_URL
+        value: http://localhost:8000

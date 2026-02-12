@@ -19,7 +19,9 @@ const investorUserSchema = new mongoose.Schema({
   portfolioCompanies: [{ type: String }],
   pastActivity: [{ type: String }],
   checkSize: { type: Number },
-  thesis: { type: String }
+  thesis: { type: String },
+  suspendedUntil: { type: Date },
+  suspensionReason: { type: String }
 }, { timestamps: true });
 
 investorUserSchema.pre('save', async function(next) {

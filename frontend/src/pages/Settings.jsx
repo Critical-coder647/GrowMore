@@ -228,7 +228,7 @@ function Settings({ user, go, logout }) {
         <div className="max-w-4xl mx-auto p-8">
           <div className="sticky top-0 z-20 -mx-8 mb-6 px-8 py-3 bg-[#f5f7f8] dark:bg-[#0f1419] border-b border-slate-200 dark:border-slate-700">
             <button
-              onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : 'investor-dashboard')}
+              onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : user?.role === 'admin' ? 'admin-dashboard' : 'investor-dashboard')}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             >
               <span className="material-symbols-outlined">arrow_back</span>
