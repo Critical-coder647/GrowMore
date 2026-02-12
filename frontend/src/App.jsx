@@ -4,6 +4,7 @@ import Register from './pages/Register.jsx';
 import StartupDashboard from './pages/startup/StartupDashboard.jsx';
 import StartupConnectPage from './pages/startup/StartupConnectPage.jsx';
 import StartupProfile from './pages/startup/StartupProfile.jsx';
+import FundingRequests from './pages/startup/FundingRequests.jsx';
 import ProfileStep1BasicDetails from './pages/startup/ProfileStep1BasicDetails.jsx';
 import ProfileStep2BusinessDetails from './pages/startup/ProfileStep2BusinessDetails.jsx';
 import ProfileStep3FundingRequirements from './pages/startup/ProfileStep3FundingRequirements.jsx';
@@ -67,7 +68,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f7f8] dark:bg-[#101b22]">
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
         <nav className="sticky top-0 z-50 bg-[#f5f7f8]/90 dark:bg-[#101b22]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
           <div className="flex justify-center w-full">
             <div className="flex items-center justify-between w-full max-w-7xl px-6 py-4">
@@ -129,6 +130,7 @@ export default function App() {
         {token && view === 'profile-step-5' && <ProfileStep5ProfileAcceptance user={user} go={go} />}
         {token && view === 'startup-dashboard' && <StartupDashboard user={user} go={go} />}
         {token && view === 'startup-profile' && <StartupProfile user={user} go={go} />}
+        {token && view === 'startup-funding' && <FundingRequests user={user} go={go} />}
         {token && view === 'startup-connect' && <StartupConnectPage user={user} go={go} />}
         {token && view === 'investor-dashboard' && <InvestorDashboard user={user} go={go} />}
         {token && view === 'investor-profile' && <InvestorProfile user={user} go={go} />}
@@ -142,7 +144,7 @@ export default function App() {
         {token && view === 'settings' && <Settings user={user} go={go} logout={logout} />}
         {token && view === 'matching' && <div className="max-w-6xl mx-auto p-6"><MatchingPage user={user} go={go} /></div>}
       </main>
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'community' && view !== 'settings' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && view !== 'investor-connect' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'community' && view !== 'settings' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && view !== 'investor-connect' && (
         <footer className="py-8 text-center border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-400">
             © {new Date().getFullYear()} GrowMore Inc. All rights reserved.

@@ -128,9 +128,9 @@ function StartupDashboard({ user, go }) {
                   </button>
                   <button onClick={() => go('startup-profile')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">person</span>
-                    <span className="text-sm font-medium">My Startup Profile</span>
+                    <span className="text-sm font-medium">Profile</span>
                   </button>
-                  <button className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+                  <button onClick={() => go('startup-funding')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
                     <span className="material-symbols-outlined">monetization_on</span>
                     <span className="text-sm font-medium">Funding Requests</span>
                   </button>
@@ -196,7 +196,7 @@ function StartupDashboard({ user, go }) {
                     <span className="material-symbols-outlined text-[20px]">add_box</span>
                     New Post
                   </button>
-                  <button className="flex items-center gap-2 rounded-lg bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#0d93f2]/90">
+                  <button onClick={() => go('startup-funding')} className="flex items-center gap-2 rounded-lg bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#0d93f2]/90">
                     <span className="material-symbols-outlined text-[20px]">request_quote</span>
                     New Funding Request
                   </button>

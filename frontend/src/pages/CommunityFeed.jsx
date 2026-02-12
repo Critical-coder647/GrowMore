@@ -476,102 +476,6 @@ function CommunityFeed({ user, go }) {
                     </button>
                   </div>
                 ))}
-                {reportPostId && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-                    <div className="mx-4 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-white shadow-2xl">
-                      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-                        <button onClick={closeReportModal} className="rounded-lg p-2 text-slate-300 hover:bg-slate-800">
-                          <span className="material-symbols-outlined">close</span>
-                        </button>
-                        <h3 className="text-sm font-semibold uppercase tracking-wide">Report</h3>
-                        <div className="w-10" />
-                      </div>
-
-                      {reportStep === 1 && (
-                        <div className="px-5 py-4">
-                          <p className="text-sm text-slate-300 mb-4">Why are you reporting this post?</p>
-                          <div className="divide-y divide-slate-800">
-                            {reportReasons.map((reason) => (
-                              <button
-                                key={reason}
-                                onClick={() => { setReportReason(reason); setReportStep(2); }}
-                                className="w-full flex items-center justify-between py-4 text-left text-sm text-slate-100 hover:text-white"
-                              >
-                                <span>{reason}</span>
-                                <span className="material-symbols-outlined text-slate-500">chevron_right</span>
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {reportStep === 2 && (
-                        <div className="px-5 py-4">
-                          <p className="text-sm text-slate-300 mb-2">Selected reason</p>
-                          <div className="mb-4 rounded-xl border border-slate-800 bg-slate-800/40 px-4 py-3 text-sm">
-                            {reportReason}
-                          </div>
-                          <label className="text-xs font-semibold uppercase text-slate-400">Write details (optional)</label>
-                          <textarea
-                            value={reportDetails}
-                            onChange={(e) => setReportDetails(e.target.value)}
-                            placeholder="Add a detailed explanation"
-                            className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 p-3 text-sm text-white placeholder-slate-500 focus:border-[#0d93f2] focus:outline-none focus:ring-2 focus:ring-[#0d93f2]/20"
-                            rows="4"
-                          />
-                          <div className="mt-4 flex items-center gap-2">
-                            <button
-                              onClick={() => setReportStep(1)}
-                              className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-                            >
-                              Back
-                            </button>
-                            <button
-                              onClick={handleSubmitReport}
-                              className="ml-auto rounded-lg bg-[#4f5bd5] px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
-                            >
-                              Submit Report
-                            </button>
-                            <button
-                              onClick={handleSubmitReport}
-                              className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white"
-                            >
-                              Skip
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {reportStep === 3 && (
-                        <div className="px-6 py-8 text-center">
-                          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border-4 border-green-500 text-green-500">
-                            <span className="material-symbols-outlined">check</span>
-                          </div>
-                          <h4 className="text-lg font-semibold mb-2">Thanks for your feedback</h4>
-                          <p className="text-sm text-slate-300 mb-6">
-                            When you see something you don't like, you can report it if it doesn't follow our Community Standards.
-                          </p>
-                          <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden text-left">
-                            <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-red-400 hover:bg-slate-800">
-                              <span>Block {reportTarget?.userName || 'user'}</span>
-                              <span className="material-symbols-outlined text-slate-500">chevron_right</span>
-                            </button>
-                            <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-slate-800">
-                              <span>Learn more about our Community Standards</span>
-                              <span className="material-symbols-outlined text-slate-500">chevron_right</span>
-                            </button>
-                          </div>
-                          <button
-                            onClick={closeReportModal}
-                            className="mt-6 w-full rounded-xl bg-[#4f5bd5] py-3 text-sm font-semibold text-white hover:brightness-110"
-                          >
-                            Close
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
             
@@ -605,6 +509,102 @@ function CommunityFeed({ user, go }) {
                 <button onClick={handleCreatePost} disabled={!newPost.trim()} className="rounded-xl bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white hover:bg-[#0d93f2]/90 disabled:opacity-50 disabled:cursor-not-allowed">Post</button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {reportPostId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="mx-4 w-full max-w-lg overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 text-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+              <button onClick={closeReportModal} className="rounded-lg p-2 text-slate-300 hover:bg-slate-800">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">Report</h3>
+              <div className="w-10" />
+            </div>
+
+            {reportStep === 1 && (
+              <div className="px-5 py-4">
+                <p className="text-sm text-slate-300 mb-4">Why are you reporting this post?</p>
+                <div className="divide-y divide-slate-800">
+                  {reportReasons.map((reason) => (
+                    <button
+                      key={reason}
+                      onClick={() => { setReportReason(reason); setReportStep(2); }}
+                      className="w-full flex items-center justify-between py-4 text-left text-sm text-slate-100 hover:text-white"
+                    >
+                      <span>{reason}</span>
+                      <span className="material-symbols-outlined text-slate-500">chevron_right</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {reportStep === 2 && (
+              <div className="px-5 py-4">
+                <p className="text-sm text-slate-300 mb-2">Selected reason</p>
+                <div className="mb-4 rounded-xl border border-slate-800 bg-slate-800/40 px-4 py-3 text-sm">
+                  {reportReason}
+                </div>
+                <label className="text-xs font-semibold uppercase text-slate-400">Write details (optional)</label>
+                <textarea
+                  value={reportDetails}
+                  onChange={(e) => setReportDetails(e.target.value)}
+                  placeholder="Add a detailed explanation"
+                  className="mt-2 w-full rounded-xl border border-slate-800 bg-slate-900 p-3 text-sm text-white placeholder-slate-500 focus:border-[#0d93f2] focus:outline-none focus:ring-2 focus:ring-[#0d93f2]/20"
+                  rows="4"
+                />
+                <div className="mt-4 flex items-center gap-2">
+                  <button
+                    onClick={() => setReportStep(1)}
+                    className="rounded-lg border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleSubmitReport}
+                    className="ml-auto rounded-lg bg-[#4f5bd5] px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
+                  >
+                    Submit Report
+                  </button>
+                  <button
+                    onClick={handleSubmitReport}
+                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:text-white"
+                  >
+                    Skip
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {reportStep === 3 && (
+              <div className="px-6 py-8 text-center">
+                <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full border-4 border-green-500 text-green-500">
+                  <span className="material-symbols-outlined">check</span>
+                </div>
+                <h4 className="text-lg font-semibold mb-2">Thanks for your feedback</h4>
+                <p className="text-sm text-slate-300 mb-6">
+                  When you see something you don't like, you can report it if it doesn't follow our Community Standards.
+                </p>
+                <div className="divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden text-left">
+                  <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-red-400 hover:bg-slate-800">
+                    <span>Block {reportTarget?.userName || 'user'}</span>
+                    <span className="material-symbols-outlined text-slate-500">chevron_right</span>
+                  </button>
+                  <button className="w-full flex items-center justify-between px-4 py-3 text-sm text-white hover:bg-slate-800">
+                    <span>Learn more about our Community Standards</span>
+                    <span className="material-symbols-outlined text-slate-500">chevron_right</span>
+                  </button>
+                </div>
+                <button
+                  onClick={closeReportModal}
+                  className="mt-6 w-full rounded-xl bg-[#4f5bd5] py-3 text-sm font-semibold text-white hover:brightness-110"
+                >
+                  Close
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
