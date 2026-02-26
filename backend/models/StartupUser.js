@@ -22,6 +22,14 @@ const startupUserSchema = new mongoose.Schema({
   founders: [{ type: String }],
   website: { type: String },
   pastActivity: [{ type: String }],
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  verificationReviewedAt: { type: Date },
+  verificationReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  verificationNote: { type: String },
   suspendedUntil: { type: Date },
   suspensionReason: { type: String }
 }, { timestamps: true });

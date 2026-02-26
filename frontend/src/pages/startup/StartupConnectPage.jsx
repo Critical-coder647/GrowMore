@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client from '../../api/client.js';
+import StartupSidebar from '../../components/StartupSidebar.jsx';
 
 export default function StartupConnectPage({ go, user }) {
   const [connections, setConnections] = useState({});
@@ -77,90 +78,13 @@ export default function StartupConnectPage({ go, user }) {
           __html: ".no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }"
         }}
       />
-      <div className="flex min-h-screen w-full flex-col">
-        {/* Main Layout */}
-        <div className="mx-auto flex w-full max-w-[1440px] flex-1 gap-6 p-6">
-          {/* Left Sidebar */}
-          <aside className="hidden lg:flex w-72 flex-col gap-6 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-            {/* Profile Summary */}
-            <div className="flex flex-col gap-4 rounded-xl bg-white dark:bg-[#111a22] p-5 shadow-sm border border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9] flex items-center justify-center text-white font-bold">TN</div>
-                <div className="flex flex-col">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">TechNova Inc.</h3>
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400">Seed Stage • Fintech</p>
-                </div>
-              </div>
-              <div className="flex w-full gap-2">
-                <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 py-2">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white">42</span>
-                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Views</span>
-                </div>
-                <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 py-2">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white">12</span>
-                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Connects</span>
-                </div>
-              </div>
-            </div>
+      <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <StartupSidebar user={user} go={go} activeView="startup-connect" />
 
-            {/* Navigation Menu */}
-            <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] py-3 shadow-sm border border-slate-200 dark:border-slate-800">
-              <button onClick={() => go('startup-dashboard')} className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">dashboard</span>
-                Dashboard
-              </button>
-              <button className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-[#0d93f2] bg-[#0d93f2]/10 border-r-2 border-[#0d93f2]">
-                <span className="material-symbols-outlined fill-current">explore</span>
-                Discover
-              </button>
-              <button onClick={() => go('community')} className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">groups</span>
-                Community
-              </button>
-              <button className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">bookmark</span>
-                Saved Profiles
-              </button>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] p-5 shadow-sm border border-slate-200 dark:border-slate-800 gap-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Filters</h4>
-                <button className="text-xs font-medium text-[#0d93f2] hover:text-blue-600">Reset</button>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Ticket Size</label>
-                <input className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#0d93f2]" max={100} min={0} type="range" />
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                  <span>$50k</span>
-                  <span>$5M+</span>
-                </div>
-              </div>
-              <div className="border-t border-slate-200 dark:border-slate-700" />
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Industry</label>
-                {['SaaS', 'Fintech', 'HealthTech', 'Web3'].map((industry) => (
-                  <label key={industry} className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" className="size-4 rounded border-slate-300 text-[#0d93f2] focus:ring-[#0d93f2]" defaultChecked={industry === 'SaaS'} />
-                    <span className="text-sm text-slate-900 dark:text-white group-hover:text-[#0d93f2] transition-colors">{industry}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="border-t border-slate-200 dark:border-slate-700" />
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Stage</label>
-                <div className="flex flex-wrap gap-2">
-                  <button className="rounded-lg bg-[#0d93f2]/10 px-3 py-1.5 text-xs font-bold text-[#0d93f2] border border-[#0d93f2]/20">Pre-Seed</button>
-                  <button className="rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-transparent hover:border-slate-300 dark:hover:border-slate-600">Seed</button>
-                  <button className="rounded-lg bg-slate-100 dark:bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 border border-transparent hover:border-slate-300 dark:hover:border-slate-600">Series A</button>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Center Feed */}
-          <main className="flex flex-1 flex-col gap-6 overflow-hidden">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto flex w-full max-w-[1440px] gap-6 p-6">
+            {/* Center Feed */}
+            <section className="flex min-w-0 flex-1 flex-col gap-6">
             {/* Search */}
             <div className="relative w-full">
               <div className="flex items-center rounded-xl bg-white dark:bg-[#111a22] p-1 shadow-sm border border-slate-200 dark:border-slate-800 focus-within:ring-2 focus-within:ring-[#0d93f2]/20">
@@ -243,71 +167,70 @@ export default function StartupConnectPage({ go, user }) {
                   <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 px-4 py-3">
                     <div className="flex gap-4">
                       <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
-                        <span className="material-symbols-outlined text-lg">thumb_up</span> {post.likes}
+                </section>
                       </button>
-                      <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
-                        <span className="material-symbols-outlined text-lg">chat_bubble</span> {post.comments}
-                      </button>
-                      <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
-                        <span className="material-symbols-outlined text-lg">share</span> Share
-                      </button>
-                    </div>
-                    <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
-                      <span className="material-symbols-outlined text-lg">bookmark</span> Save
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </section>
-          </main>
-
-          {/* Right Sidebar */}
-          <aside className="hidden xl:flex w-80 flex-col gap-6 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-            {/* Messages */}
-            <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] shadow-sm border border-slate-200 dark:border-slate-800 h-full max-h-[600px]">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Messages</h4>
-                <div className="flex gap-2">
-                  <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
-                    <span className="material-symbols-outlined text-lg">edit_square</span>
-                  </button>
-                  <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
-                    <span className="material-symbols-outlined text-lg">more_horiz</span>
-                  </button>
-                </div>
-              </div>
-              <div className="flex flex-col flex-1 overflow-y-auto p-2">
-                {messages.map((msg) => (
-                  <div key={msg.id} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <div className="relative">
-                      <div className="size-10 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
-                      {msg.online && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white dark:border-[#111a22] bg-green-500" />}
-                    </div>
-                    <div className="flex flex-1 flex-col overflow-hidden">
-                      <div className="flex justify-between items-baseline">
-                        <h5 className="truncate text-sm font-bold text-slate-900 dark:text-white">{msg.name}</h5>
-                        <span className="text-[10px] text-slate-600 dark:text-slate-400">{msg.time}</span>
+                {/* Right Sidebar */}
+                <aside className="hidden xl:flex w-80 flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar">
+                  {/* Messages */}
+                  <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] shadow-sm border border-slate-200 dark:border-slate-800 h-full max-h-[600px]">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Messages</h4>
+                      <div className="flex gap-2">
+                        <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
+                          <span className="material-symbols-outlined text-lg">edit_square</span>
+                        </button>
+                        <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
+                          <span className="material-symbols-outlined text-lg">more_horiz</span>
+                        </button>
                       </div>
-                      <p className={`truncate text-xs ${msg.unread ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{msg.lastMessage}</p>
                     </div>
-                    {msg.unread && <div className="flex size-4 items-center justify-center rounded-full bg-[#0d93f2] text-[10px] font-bold text-white">1</div>}
+                    <div className="flex flex-col flex-1 overflow-y-auto p-2">
+                      {messages.map((msg) => (
+                        <div key={msg.id} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                          <div className="relative">
+                            <div className="size-10 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
+                            {msg.online && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white dark:border-[#111a22] bg-green-500" />}
+                          </div>
+                          <div className="flex flex-1 flex-col overflow-hidden">
+                            <div className="flex justify-between items-baseline">
+                              <h5 className="truncate text-sm font-bold text-slate-900 dark:text-white">{msg.name}</h5>
+                              <span className="text-[10px] text-slate-600 dark:text-slate-400">{msg.time}</span>
+                            </div>
+                            <p className={`truncate text-xs ${msg.unread ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{msg.lastMessage}</p>
+                          </div>
+                          {msg.unread && <div className="flex size-4 items-center justify-center rounded-full bg-[#0d93f2] text-[10px] font-bold text-white">1</div>}
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
 
-            {/* Mentors */}
-            <div className="flex flex-col gap-3 rounded-xl bg-white dark:bg-[#111a22] p-4 shadow-sm border border-slate-200 dark:border-slate-800">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Suggested Mentors</h4>
-                <button className="text-xs font-bold text-[#0d93f2] hover:underline">See All</button>
+                  {/* Mentors */}
+                  <div className="flex flex-col gap-3 rounded-xl bg-white dark:bg-[#111a22] p-4 shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Suggested Mentors</h4>
+                      <button className="text-xs font-bold text-[#0d93f2] hover:underline">See All</button>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {[
+                        { name: 'Dr. Emily White', role: 'CTO at TechGiant' },
+                        { name: 'Alex Brown', role: 'Product Lead at StartupX' }
+                      ].map((mentor) => (
+                        <div key={mentor.name} className="flex items-center gap-3">
+                          <div className="size-9 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
+                          <div className="flex flex-1 flex-col">
+                            <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mentor.name}</h5>
+                            <p className="text-[10px] text-slate-600 dark:text-slate-400">{mentor.role}</p>
+                          </div>
+                          <button className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                            <span className="material-symbols-outlined text-lg">person_add</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </aside>
               </div>
-              <div className="flex flex-col gap-3">
-                {[
-                  { name: 'Dr. Emily White', role: 'CTO at TechGiant' },
-                  { name: 'Alex Brown', role: 'Product Lead at StartupX' }
-                ].map((mentor) => (
-                  <div key={mentor.name} className="flex items-center gap-3">
+            </main>
                     <div className="size-9 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
                     <div className="flex flex-1 flex-col">
                       <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mentor.name}</h5>

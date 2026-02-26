@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import StartupSidebar from '../../components/StartupSidebar.jsx';
 
 // Helper function to determine which step to resume from
 const getIncompleteProfileStep = () => {
@@ -109,70 +110,7 @@ function StartupDashboard({ user, go }) {
 
   return (
     <div className="relative flex min-h-screen w-full flex-row bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-          <aside className="hidden w-64 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#111a22] md:flex">
-            <div className="flex flex-col h-full justify-between">
-              <div className="flex flex-col gap-6">
-                <div className="flex items-center gap-3 px-2 py-2 cursor-pointer" onClick={() => go('landing')}>
-                  <div className="aspect-square size-10 rounded-full bg-[#0d93f2]/20 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
-                  </div>
-                  <div className="flex flex-col">
-                    <h1 className="text-base font-bold leading-normal text-slate-900 dark:text-white">{user?.name || 'TechNova'}</h1>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Startup</p>
-                  </div>
-                </div>
-                <nav className="flex flex-col gap-2">
-                  <button className="flex items-center gap-3 rounded-xl bg-[#0d93f2]/10 px-3 py-3 text-[#0d93f2]">
-                    <span className="material-symbols-outlined fill-1" style={{fontVariationSettings: '"FILL" 1'}}>dashboard</span>
-                    <span className="text-sm font-bold">Dashboard</span>
-                  </button>
-                  <button onClick={() => go('startup-profile')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">person</span>
-                    <span className="text-sm font-medium">Profile</span>
-                  </button>
-                  <button onClick={() => go('startup-funding')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">monetization_on</span>
-                    <span className="text-sm font-medium">Funding Requests</span>
-                  </button>
-                  <button onClick={() => go('startup-connect')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">groups</span>
-                    <span className="text-sm font-medium">Investor Connect</span>
-                  </button>
-                  <button onClick={() => go('community')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">forum</span>
-                    <span className="text-sm font-medium">Community Feed</span>
-                  </button>
-                  <button onClick={() => go('messages')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">chat</span>
-                    <span className="text-sm font-medium">Messages</span>
-                  </button>
-                  <button onClick={() => go('notifications')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <div className="relative">
-                      <span className="material-symbols-outlined">notifications</span>
-                      {notificationCount > 0 && (
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white dark:ring-[#111a22]">{notificationCount}</span>
-                      )}
-                    </div>
-                    <span className="text-sm font-medium">Notifications</span>
-                  </button>
-                  <button onClick={() => go('settings')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                    <span className="material-symbols-outlined">settings</span>
-                    <span className="text-sm font-medium">Settings</span>
-                  </button>
-                </nav>
-              </div>
-              <div className="flex flex-col gap-3 rounded-xl bg-slate-50 p-4 border border-slate-100 dark:bg-slate-800/50 dark:border-slate-700">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">Profile Strength</p>
-                  <span className="text-xs font-bold text-[#0d93f2]">85%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
-                  <div className="h-full w-[85%] rounded-full bg-[#0d93f2]" />
-                </div>
-                <button className="text-xs font-medium text-[#0d93f2] hover:underline text-left">Complete Financials →</button>
-              </div>
-            </div>
-          </aside>
+          <StartupSidebar user={user} go={go} activeView="startup-dashboard" notificationCount={notificationCount} />
           <main className="flex flex-1 flex-col overflow-y-auto px-4 pb-10 pt-4 md:px-10 md:pt-8">
             <div className="mb-6 flex items-center justify-between md:hidden">
               <div className="flex items-center gap-2">

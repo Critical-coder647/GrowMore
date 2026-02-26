@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import InvestorSidebar from '../../components/InvestorSidebar.jsx';
 
 function InvestorDashboard({ go }) {
   const [user, setUser] = useState(null);
@@ -77,103 +78,7 @@ function InvestorDashboard({ go }) {
 
   return (
     <div className="flex h-screen w-full overflow-hidden" style={{ fontFamily: 'Manrope, sans-serif' }}>
-      <aside className="w-72 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex-shrink-0 z-20 hidden lg:flex">
-        <div className="flex h-full flex-col justify-between p-4">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-3 items-center pb-6 border-b border-slate-100 dark:border-slate-800">
-              <div
-                className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shadow-sm"
-                style={{
-                  backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuCHEMdPDNvg_QW7Pv0gfJgSvzaw1expUAdT6mf4PBx9EXVZnr8hSj-0jMklw7KMxM2z_YbFUEjc_GybZGr0O9rIuxNKWwOh5KvcPIe0SGE7UZmbU-JhPlCGnlX7w69VsRUDyqKu7_U6yq2iQ9aE6jfBSUParP9tGm57pvE02Xk55PDLoDzMhPi0PmHaFv-KiryjuORp1_wZZXqkX0JjMNkQWGNsis_kA8L4hUZioAOD6XpgRGmy5OXeOjIZTB90LybopyvjvhEWvCQ")'
-                }}
-              />
-              <div className="flex flex-col">
-                <h1 className="text-slate-900 dark:text-white text-base font-bold leading-normal">
-                  {user ? user.name : 'Investor'}
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-xs font-medium leading-normal">
-                  {user ? user.email : 'Partner at VC Firm'}
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 mt-2">
-              <button
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-[#0d93f2]/10 text-[#0d93f2] group transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  dashboard
-                </span>
-                <p className="text-sm font-bold leading-normal">Dashboard</p>
-              </button>
-             <button
-                onClick={() => go('investor-profile')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  person
-                </span>
-                <p className="text-sm font-medium leading-normal">Profile</p>
-              </button>
-              <button
-                onClick={() => go('investor-connect')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  rocket_launch
-                </span>
-                <p className="text-sm font-medium leading-normal">Discover Startups</p>
-              </button>
-              <button
-                onClick={() => go('community')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  groups
-                </span>
-                <p className="text-sm font-medium leading-normal">Community</p>
-              </button>
-              <button
-                onClick={() => go('messages')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  chat
-                </span>
-                <p className="text-sm font-medium leading-normal">Messages</p>
-              </button>
-              <button
-                onClick={() => go('notifications')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  notifications
-                </span>
-                <div className="flex flex-1 items-center justify-between">
-                  <p className="text-sm font-medium leading-normal">Notifications</p>
-                  {notificationCount > 0 && (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                      {notificationCount}
-                    </span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={() => go('settings')}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-all"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: 24 }}>
-                  settings
-                </span>
-                <p className="text-sm font-medium leading-normal">Settings</p>
-              </button>
-            </div>
-          </div>
-          <button className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-11 px-4 bg-[#0d93f2] text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-[#0b7dd1] transition-colors shadow-lg shadow-blue-500/30">
-            <span className="material-symbols-outlined mr-2 text-lg">add</span>
-            <span className="truncate">Add New Deal</span>
-          </button>
-        </div>
-      </aside>
+      <InvestorSidebar user={user} go={go} activeView="investor-dashboard" notificationCount={notificationCount} />
       <main className="flex-1 flex flex-col h-full overflow-y-auto relative z-0 bg-[#f5f7f8] dark:bg-[#0d161c]">
         <header className="w-full px-6 pt-6 pb-2">
           <div className="flex items-center justify-between mb-6">

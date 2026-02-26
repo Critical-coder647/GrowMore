@@ -1,5 +1,8 @@
 ﻿import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import AdminSidebar from '../components/AdminSidebar.jsx';
+import StartupSidebar from '../components/StartupSidebar.jsx';
+import InvestorSidebar from '../components/InvestorSidebar.jsx';
 
 function CommunityFeed({ user, go }) {
   const [posts, setPosts] = useState([]);
@@ -28,6 +31,12 @@ function CommunityFeed({ user, go }) {
     'Scam, fraud or spam',
     'False information'
   ];
+
+  const dashboardView = user?.role === 'startup'
+    ? 'startup-dashboard'
+    : user?.role === 'admin'
+    ? 'admin-dashboard'
+    : 'investor-dashboard';
 
   useEffect(() => {
     fetchPosts();
@@ -245,42 +254,13 @@ function CommunityFeed({ user, go }) {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-      <aside className="hidden w-72 flex-col border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#111a22] md:flex">
-        <div className="flex flex-col h-full justify-between">
-          <div className="flex flex-col gap-6">
-            <button 
-              onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : user?.role === 'admin' ? 'admin-dashboard' : 'investor-dashboard')}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-fit"
-            >
-              <span className="material-symbols-outlined">arrow_back</span>
-              <span className="text-sm font-medium">Back to Dashboard</span>
-            </button>
-            <div className="flex items-center gap-3 px-2 py-2">
-              <div className="aspect-square size-10 rounded-full bg-[#0d93f2]/20 flex items-center justify-center">
-                <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-base font-bold leading-normal text-slate-900 dark:text-white">{user?.name || 'User'}</h1>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400">{user?.role || 'Member'}</p>
-              </div>
-            </div>
-            <nav className="flex flex-col gap-2">
-              <button onClick={() => go(user?.role === 'startup' ? 'startup-dashboard' : user?.role === 'admin' ? 'admin-dashboard' : 'investor-dashboard')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                <span className="material-symbols-outlined">dashboard</span>
-                <span className="text-sm font-medium">Dashboard</span>
-              </button>
-              <button className="flex items-center gap-3 rounded-xl bg-[#0d93f2]/10 px-3 py-3 text-[#0d93f2]">
-                <span className="material-symbols-outlined">forum</span>
-                <span className="text-sm font-bold">Community Feed</span>
-              </button>
-              <button onClick={() => go('settings')} className="group flex items-center gap-3 rounded-xl px-3 py-3 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
-                <span className="material-symbols-outlined">settings</span>
-                <span className="text-sm font-medium">Settings</span>
-              </button>
-            </nav>
-          </div>
-        </div>
-      </aside>
+      {user?.role === 'admin' ? (
+        <AdminSidebar go={go} activeView="community" />
+      ) : user?.role === 'startup' ? (
+        <StartupSidebar user={user} go={go} activeView="community" />
+      ) : (
+        <InvestorSidebar user={user} go={go} activeView="community" />
+      )}
       <main className="flex flex-1 flex-col overflow-y-auto">
         <header className="border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-[#111a22]">
           <div className="flex items-center justify-between">
@@ -292,6 +272,57 @@ function CommunityFeed({ user, go }) {
               <span className="material-symbols-outlined text-xl">add_circle</span>
               New Post
             </button>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto md:hidden">
+            <button onClick={() => go(dashboardView)} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              Dashboard
+            </button>
+
+            {user?.role === 'startup' && (
+              <>
+                <button onClick={() => go('startup-profile')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Profile
+                </button>
+                <button onClick={() => go('startup-connect')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Connect
+                </button>
+              </>
+            )}
+
+            {user?.role === 'investor' && (
+              <>
+                <button onClick={() => go('investor-profile')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Profile
+                </button>
+                <button onClick={() => go('investor-connect')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Discover
+                </button>
+              </>
+            )}
+
+            {user?.role === 'admin' && (
+              <>
+                <button onClick={() => go('admin-users')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  User Mgmt
+                </button>
+                <button onClick={() => go('admin-moderation')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  Moderation
+                </button>
+              </>
+            )}
+
+            <button className="shrink-0 rounded-lg bg-[#0d93f2]/10 px-3 py-2 text-xs font-bold text-[#0d93f2]">
+              Community
+            </button>
+            <button onClick={() => go('messages')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              Messages
+            </button>
+            {user?.role !== 'admin' && (
+              <button onClick={() => go('notifications')} className="shrink-0 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                Notifications
+              </button>
+            )}
           </div>
         </header>
         <div className="flex-1 px-6 py-6">

@@ -12,6 +12,71 @@ const resolveModel = (userType) => {
   return User;
 };
 
+const resolveProfileModel = (userType) => {
+  if (userType === 'StartupUser' || userType === 'startup') return StartupUser;
+  if (userType === 'InvestorUser' || userType === 'investor') return InvestorUser;
+  return null;
+};
+
+router.get('/profiles', auth(['admin']), async (req, res) => {
+  try {
+    const { status = 'pending' } = req.query;
+    let query = {};
+    if (status === 'pending') {
+      query = {
+        $or: [
+          { verificationStatus: 'pending' },
+          { verificationStatus: { $exists: false } },
+          { verificationStatus: null }
+        ]
+      };
+    } else if (status !== 'all') {
+      query = { verificationStatus: status };
+    }
+
+    const [startups, investors] = await Promise.all([
+      StartupUser.find(query).select('-password').sort({ createdAt: -1 }),
+      InvestorUser.find(query).select('-password').sort({ createdAt: -1 })
+    ]);
+
+    res.json({ startups, investors });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.patch('/profiles/:userType/:id/review', auth(['admin']), async (req, res) => {
+  try {
+    const { userType, id } = req.params;
+    const { status, note } = req.body;
+
+    if (!['approved', 'rejected', 'pending'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const Model = resolveProfileModel(userType);
+    if (!Model) return res.status(400).json({ message: 'Invalid user type' });
+
+    const user = await Model.findById(id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.verificationStatus = status;
+    user.verificationReviewedAt = new Date();
+    user.verificationReviewedBy = req.user.id;
+    user.verificationNote = note || '';
+    await user.save();
+
+    res.json({
+      id: user._id,
+      userType,
+      verificationStatus: user.verificationStatus,
+      verificationReviewedAt: user.verificationReviewedAt
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.post('/users/:id/suspend', auth(['admin']), async (req, res) => {
   try {
     const { userType, days, until, reason } = req.body;

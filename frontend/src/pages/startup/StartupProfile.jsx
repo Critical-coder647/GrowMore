@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import StartupSidebar from '../../components/StartupSidebar.jsx';
 
 export default function StartupProfile({ user, go }) {
   const [profile, setProfile] = useState(null);
@@ -24,7 +25,9 @@ export default function StartupProfile({ user, go }) {
   const data = profile || user || {};
 
   return (
-    <div className="min-h-screen w-full bg-[#f5f7f8] dark:bg-[#101b22] text-slate-900 dark:text-white" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="min-h-screen w-full bg-[#f5f7f8] dark:bg-[#101b22] text-slate-900 dark:text-white flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <StartupSidebar user={user} go={go} activeView="startup-profile" />
+      <main className="flex-1 overflow-y-auto">
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -110,6 +113,7 @@ export default function StartupProfile({ user, go }) {
           </div>
         </div>
       </div>
+      </main>
     </div>
   );
 }

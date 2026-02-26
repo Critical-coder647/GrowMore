@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import client from '../../api/client.js';
+import InvestorSidebar from '../../components/InvestorSidebar.jsx';
 
 export default function InvestorConnectPage({ go, user }) {
   const [connections, setConnections] = useState({});
@@ -63,84 +64,7 @@ export default function InvestorConnectPage({ go, user }) {
         {/* Main Layout */}
         <div className="mx-auto flex w-full max-w-[1440px] flex-1 gap-6 p-6">
           {/* Left Sidebar */}
-          <aside className="hidden lg:flex w-72 flex-col gap-6 sticky top-24 h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-            {/* Profile Summary */}
-            <div className="flex flex-col gap-4 rounded-xl bg-white dark:bg-[#111a22] p-5 shadow-sm border border-slate-200 dark:border-slate-800">
-              <div className="flex items-center gap-4">
-                <div className="size-12 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9] flex items-center justify-center text-white font-bold">VC</div>
-                <div className="flex flex-col">
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Capital Ventures</h3>
-                  <p className="text-xs font-medium text-slate-600 dark:text-slate-400">$50M Fund • Series A+</p>
-                </div>
-              </div>
-              <div className="flex w-full gap-2">
-                <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 py-2">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white">28</span>
-                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Portfolio</span>
-                </div>
-                <div className="flex flex-1 flex-col items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 py-2">
-                  <span className="text-lg font-bold text-slate-900 dark:text-white">15</span>
-                  <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Interests</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation Menu */}
-            <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] py-3 shadow-sm border border-slate-200 dark:border-slate-800">
-              <button onClick={() => go('investor-dashboard')} className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">dashboard</span>
-                Dashboard
-              </button>
-              <button className="flex items-center gap-3 px-5 py-3 text-sm font-bold text-[#0d93f2] bg-[#0d93f2]/10 border-r-2 border-[#0d93f2]">
-                <span className="material-symbols-outlined fill-current">rocket_launch</span>
-                Discover
-              </button>
-              <button className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">bookmark</span>
-                Saved
-              </button>
-              <button className="flex items-center gap-3 px-5 py-3 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#0d93f2] transition-colors">
-                <span className="material-symbols-outlined">trending_up</span>
-                Portfolio
-              </button>
-            </div>
-
-            {/* Filters */}
-            <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] p-5 shadow-sm border border-slate-200 dark:border-slate-800 gap-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">Filters</h4>
-                <button className="text-xs font-medium text-[#0d93f2] hover:text-blue-600">Reset</button>
-              </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Funding Stage</label>
-                {['Pre-Seed', 'Seed', 'Series A', 'Series B'].map((stage) => (
-                  <label key={stage} className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" className="size-4 rounded border-slate-300 text-[#0d93f2] focus:ring-[#0d93f2]" defaultChecked={stage === 'Seed'} />
-                    <span className="text-sm text-slate-900 dark:text-white group-hover:text-[#0d93f2] transition-colors">{stage}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="border-t border-slate-200 dark:border-slate-700" />
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Industry</label>
-                {['SaaS', 'Healthtech', 'Fintech', 'ClimaTech'].map((industry) => (
-                  <label key={industry} className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" className="size-4 rounded border-slate-300 text-[#0d93f2] focus:ring-[#0d93f2]" defaultChecked={industry === 'SaaS'} />
-                    <span className="text-sm text-slate-900 dark:text-white group-hover:text-[#0d93f2] transition-colors">{industry}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="border-t border-slate-200 dark:border-slate-700" />
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-bold uppercase text-slate-600 dark:text-slate-400">Match Score</label>
-                <input className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#0d93f2]" max={100} min={0} type="range" defaultValue="50" />
-                <div className="flex justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                  <span>50%+</span>
-                  <span>100%</span>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <InvestorSidebar user={user} go={go} activeView="investor-connect" />
 
           {/* Center Feed */}
           <main className="flex flex-1 flex-col gap-6 overflow-hidden">

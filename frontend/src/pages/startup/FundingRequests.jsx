@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import StartupSidebar from '../../components/StartupSidebar.jsx';
 
 export default function FundingRequests({ user, go }) {
   const [form, setForm] = useState({
@@ -44,7 +45,9 @@ export default function FundingRequests({ user, go }) {
   }, [form]);
 
   return (
-    <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-900" style={{ fontFamily: 'Manrope, sans-serif' }}>
+    <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-900 flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <StartupSidebar user={user} go={go} activeView="startup-funding" />
+      <main className="flex-1 overflow-y-auto">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <button
@@ -258,6 +261,7 @@ export default function FundingRequests({ user, go }) {
           </div>
         </div>
       </div>
+      </main>
 
       {showCancelConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4">

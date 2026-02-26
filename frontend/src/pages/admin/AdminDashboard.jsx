@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import AdminSidebar from '../../components/AdminSidebar.jsx';
 
 export default function AdminDashboard({ user, go }) {
   const name = user?.name || 'Admin';
   
   const [stats, setStats] = useState([
-    { label: 'Total Startups', value: '0', change: '+0%', icon: 'business_center' },
-    { label: 'Total Investors', value: '0', change: '+0%', icon: 'account_balance_wallet' },
-    { label: 'Funds Raised', value: '$0', change: '+0%', icon: 'trending_up' },
-    { label: 'Active Rounds', value: '0', change: '+0%', icon: 'monitoring' }
+    { label: 'Total Startups', value: '0', icon: 'business_center' },
+    { label: 'Total Investors', value: '0', icon: 'account_balance_wallet' },
+    { label: 'Funds Raised', value: '$0', icon: 'trending_up' },
+    { label: 'Active Rounds', value: '0', icon: 'monitoring' }
   ]);
   
   const [startups, setStartups] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [pendingProfiles, setPendingProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [investmentData, setInvestmentData] = useState({
     total: '$0',
@@ -26,36 +28,260 @@ export default function AdminDashboard({ user, go }) {
     fetchDashboardData();
   }, []);
 
+  const getTimeAgo = (dateValue) => {
+    if (!dateValue) return 'just now';
+    const diffMs = Date.now() - new Date(dateValue).getTime();
+    const minutes = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+    if (minutes < 60) return `${minutes} min ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hr ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days > 1 ? 's' : ''} ago`;
+  };
+
+  const sendNotification = async ({ recipientId, recipientType, type, title, message, link, metadata }) => {
+    if (!recipientId || !recipientType) return;
+    const token = localStorage.getItem('token');
+    await axios.post(
+      'http://localhost:5000/api/notifications',
+      { recipientId, recipientType, type, title, message, link, metadata },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  };
+
+  const refreshReports = async () => {
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+    const postsRes = await axios.get('http://localhost:5000/api/community/posts?limit=100', { headers });
+    const postsData = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data?.posts;
+    setPosts(postsData || []);
+  };
+
+  const refreshPendingProfiles = async () => {
+    const token = localStorage.getItem('token');
+    const headers = { Authorization: `Bearer ${token}` };
+    const pendingRes = await axios.get('http://localhost:5000/api/admin/profiles?status=pending', { headers });
+    const pendingStartups = pendingRes.data?.startups || [];
+    const pendingInvestors = pendingRes.data?.investors || [];
+
+    const mappedPending = [
+      ...pendingStartups.map((s) => ({
+        id: s._id,
+        name: s.name || s.companyName || 'Unnamed Startup',
+        contact: s.email || 'unknown@email.com',
+        type: 'Startup',
+        userType: 'StartupUser',
+        submitted: new Date(s.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      })),
+      ...pendingInvestors.map((i) => ({
+        id: i._id,
+        name: i.name || i.firmName || 'Unnamed Investor',
+        contact: i.email || 'unknown@email.com',
+        type: 'Investor',
+        userType: 'InvestorUser',
+        submitted: new Date(i.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      }))
+    ]
+      .sort((a, b) => new Date(b.submitted).getTime() - new Date(a.submitted).getTime())
+      .slice(0, 5);
+
+    setPendingProfiles(mappedPending);
+  };
+
+  const handleApproveProfile = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:5000/api/admin/profiles/${item.userType}/${item.id}/review`,
+        { status: 'approved', note: 'Approved from dashboard' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setPendingProfiles((prev) => prev.filter((profile) => profile.id !== item.id));
+
+      try {
+        await sendNotification({
+          recipientId: item.id,
+          recipientType: item.userType,
+          type: 'verification',
+          title: 'Account verified',
+          message: 'Your account has been verified and approved by our team.',
+          link: '/settings',
+          metadata: { userId: item.id }
+        });
+      } catch (notifyError) {
+        console.error('Notification failed after approve:', notifyError);
+      }
+    } catch (error) {
+      console.error('Error approving profile:', error);
+    }
+  };
+
+  const handleRejectProfile = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:5000/api/admin/profiles/${item.userType}/${item.id}/review`,
+        { status: 'rejected', note: 'Rejected from dashboard' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setPendingProfiles((prev) => prev.filter((profile) => profile.id !== item.id));
+
+      try {
+        await sendNotification({
+          recipientId: item.id,
+          recipientType: item.userType,
+          type: 'verification',
+          title: 'Account rejected',
+          message: 'Your account verification was rejected. Please update your profile and reapply.',
+          link: '/settings',
+          metadata: { userId: item.id }
+        });
+      } catch (notifyError) {
+        console.error('Notification failed after reject:', notifyError);
+      }
+    } catch (error) {
+      console.error('Error rejecting profile:', error);
+    }
+  };
+
+  const handleViewPost = (item) => {
+    localStorage.setItem('communityFocusPostId', item.id);
+    go('community');
+  };
+
+  const handleRemovePost = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/community/posts/${item.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await sendNotification({
+        recipientId: item.authorId,
+        recipientType: item.userType,
+        type: 'moderation',
+        title: 'Post removed',
+        message: 'Your post was removed for violating community guidelines.',
+        link: '/community',
+        metadata: { postId: item.id }
+      });
+      await refreshReports();
+    } catch (error) {
+      console.error('Error removing post:', error);
+    }
+  };
+
+  const handleWarnUser = async (item) => {
+    try {
+      await sendNotification({
+        recipientId: item.authorId,
+        recipientType: item.userType,
+        type: 'warning',
+        title: 'Account warning',
+        message: 'Please review our community policies. Further violations may result in suspension.',
+        link: '/community',
+        metadata: { postId: item.id }
+      });
+    } catch (error) {
+      console.error('Error warning user:', error);
+    }
+  };
+
+  const handleSuspendUser = async (item) => {
+    try {
+      const value = window.prompt('Suspend user for how many days?', '7');
+      const days = Number(value || 7);
+      if (!Number.isFinite(days) || days <= 0) return;
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/admin/users/${item.authorId}/suspend`,
+        { userType: item.userType, days, reason: 'Community guidelines violation' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await sendNotification({
+        recipientId: item.authorId,
+        recipientType: item.userType,
+        type: 'suspension',
+        title: 'Account suspended',
+        message: `Your account has been suspended for ${days} days due to policy violations.`,
+        link: '/community',
+        metadata: { postId: item.id }
+      });
+      await refreshReports();
+    } catch (error) {
+      console.error('Error suspending user:', error);
+    }
+  };
+
+  const handleDismissReport = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/community/posts/${item.id}/dismiss-report`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await refreshReports();
+    } catch (error) {
+      console.error('Error dismissing report:', error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
       
       // Fetch all data in parallel
-      const [startupsRes, investorsRes, postsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/startups/', { headers }),
-        axios.get('http://localhost:5000/api/investors/', { headers }),
-        axios.get('http://localhost:5000/api/community/posts?limit=100', { headers })
+      const [profilesAllRes, postsRes, pendingRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/admin/profiles?status=all', { headers }),
+        axios.get('http://localhost:5000/api/community/posts?limit=100', { headers }),
+        axios.get('http://localhost:5000/api/admin/profiles?status=pending', { headers })
       ]);
       
-      const startupsData = startupsRes.data || [];
-      const investorsData = investorsRes.data || [];
-      const postsData = postsRes.data || [];
+      const startupsData = profilesAllRes.data?.startups || [];
+      const investorsData = profilesAllRes.data?.investors || [];
+      const postsData = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data?.posts || [];
       
       setStartups(startupsData);
       setInvestors(investorsData);
       setPosts(postsData);
+
+      const pendingStartups = pendingRes.data?.startups || [];
+      const pendingInvestors = pendingRes.data?.investors || [];
+      const mappedPending = [
+        ...pendingStartups.map((s) => ({
+          id: s._id,
+          name: s.name || s.companyName || 'Unnamed Startup',
+          contact: s.email || 'unknown@email.com',
+          type: 'Startup',
+          userType: 'StartupUser',
+          submitted: new Date(s.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        })),
+        ...pendingInvestors.map((i) => ({
+          id: i._id,
+          name: i.name || i.firmName || 'Unnamed Investor',
+          contact: i.email || 'unknown@email.com',
+          type: 'Investor',
+          userType: 'InvestorUser',
+          submitted: new Date(i.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        }))
+      ]
+        .sort((a, b) => new Date(b.submitted).getTime() - new Date(a.submitted).getTime())
+        .slice(0, 5);
+      setPendingProfiles(mappedPending);
       
       // Calculate total funding
       const totalFunding = startupsData.reduce((sum, startup) => {
-        const min = startup.fundingRequirementMin || 0;
-        const max = startup.fundingRequirementMax || 0;
+        const min = startup?.fundingRequirement?.min || startup?.fundingRequirementMin || 0;
+        const max = startup?.fundingRequirement?.max || startup?.fundingRequirementMax || 0;
         return sum + ((min + max) / 2);
       }, 0);
 
       // Calculate active rounds (startups seeking funding)
       const activeRounds = startupsData.filter(s => 
-        s.fundingRequirementMin && s.fundingRequirementMin > 0
+        (s?.fundingRequirement?.min || s?.fundingRequirementMin || 0) > 0
       ).length;
       
       // Update stats with real data
@@ -63,33 +289,29 @@ export default function AdminDashboard({ user, go }) {
         { 
           label: 'Total Startups', 
           value: startupsData.length.toLocaleString(), 
-          change: `+${Math.min(Math.round((startupsData.length / 100) * 13), 13)}%`,
           icon: 'business_center'
         },
         { 
           label: 'Total Investors', 
           value: investorsData.length.toLocaleString(), 
-          change: `+${Math.min(Math.round((investorsData.length / 100) * 8), 8)}%`,
           icon: 'account_balance_wallet'
         },
         { 
           label: 'Funds Raised', 
           value: totalFunding > 0 ? `$${(totalFunding / 1000000).toFixed(1)}M` : '$0', 
-          change: `+${Math.min(Math.round((totalFunding / 1000000) * 0.52), 22)}%`,
           icon: 'trending_up'
         },
         { 
           label: 'Active Rounds', 
           value: activeRounds.toString(), 
-          change: `+${Math.min(Math.round((activeRounds / 100) * 5), 5)}%`,
           icon: 'monitoring'
         }
       ]);
 
       // Set investment data
       setInvestmentData({
-        total: totalFunding > 0 ? `$${(totalFunding / 1000000).toFixed(1)}M` : '$12.4M',
-        change: '+22%',
+        total: totalFunding > 0 ? `$${(totalFunding / 1000000).toFixed(1)}M` : '$0',
+        change: totalFunding > 0 ? `+${Math.min(99, Math.max(1, Math.round(totalFunding / 1000000)))}%` : '+0%',
         chartPoints: generateChartData(totalFunding)
       });
 
@@ -102,8 +324,8 @@ export default function AdminDashboard({ user, go }) {
           color: 'text-blue-500',
           bgColor: 'bg-blue-500/10',
           title: 'New Startup Registered',
-          description: `${recent.name || 'Unnamed startup'} verified on ${recent.industry || 'platform'}`,
-          time: '7 mins ago'
+          description: `${recent.name || 'Unnamed startup'} joined the platform`,
+          time: getTimeAgo(recent.createdAt)
         });
       }
       
@@ -113,9 +335,9 @@ export default function AdminDashboard({ user, go }) {
           icon: 'check_circle',
           color: 'text-green-500',
           bgColor: 'bg-green-500/10',
-          title: 'Funding Round Closed',
-          description: `${startup.name || 'Startup'} secured funding with 4 investors`,
-          time: '45 mins ago'
+          title: 'Startup Added',
+          description: `${startup.name || 'Startup'} profile is active`,
+          time: getTimeAgo(startup.createdAt)
         });
       }
 
@@ -125,19 +347,20 @@ export default function AdminDashboard({ user, go }) {
           color: 'text-amber-500',
           bgColor: 'bg-amber-500/10',
           title: 'Post Flagged',
-          description: 'Community post by user #JD923 reported for spam',
-          time: '1 hr ago'
+          description: `${postsData[0].userName || 'A user'} post was reported`,
+          time: getTimeAgo(postsData[0].createdAt)
         });
       }
 
-      if (investorsData.length > 0) {
+      if (pendingInvestors.length > 0 || pendingStartups.length > 0) {
+        const pendingUser = pendingInvestors[0] || pendingStartups[0];
         activities.push({
           icon: 'verified',
           color: 'text-purple-500',
           bgColor: 'bg-purple-500/10',
-          title: 'New VC Verification',
-          description: `${investorsData[0].name || 'Investor'} requested account upgrade`,
-          time: '3 hrs ago'
+          title: 'Verification Pending',
+          description: `${pendingUser?.name || 'User'} is waiting for profile review`,
+          time: getTimeAgo(pendingUser?.createdAt)
         });
       }
 
@@ -159,24 +382,6 @@ export default function AdminDashboard({ user, go }) {
     }));
   };
 
-  // Get pending verifications (recent startups/investors)
-  const pendingVerifications = [
-    ...startups.slice(0, 2).map(s => ({
-      id: s._id,
-      name: s.name || 'Unnamed Startup',
-      contact: s.email || 'sarah@email.com',
-      type: 'Startup',
-      submitted: new Date(s.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    })),
-    ...investors.slice(0, 1).map(i => ({
-      id: i._id,
-      name: i.name || 'Unnamed Investor',
-      contact: i.email || 'Individual Angel',
-      type: 'Investor',
-      submitted: new Date(i.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-    }))
-  ].slice(0, 2);
-
   // Get flagged posts for moderation
   const moderationQueue = posts
     .filter(post => post?.reports?.length && post?.reportStatus !== 'dismissed')
@@ -185,6 +390,7 @@ export default function AdminDashboard({ user, go }) {
       id: post._id,
       author: post.userName || post.author || 'Anonymous',
       authorId: post.authorId || post.userId || null,
+      userType: post.userType || (post.userRole === 'startup' ? 'StartupUser' : 'InvestorUser'),
       role: post.userRole === 'startup' ? 'Startup Founder' : 'Investor',
       content: post.content?.substring(0, 60) || 'No content',
       reportReason: post.reports?.[0]?.reason || 'Reported',
@@ -192,97 +398,40 @@ export default function AdminDashboard({ user, go }) {
       time: new Date(post.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     }));
 
-  // Get recent startups (last 5)
-  const recentStartups = startups.slice(0, 5);
-  
-  // Get recent investors (last 5)
-  const recentInvestors = investors.slice(0, 5);
-  
-  // Get recent posts for moderation
-  const recentPosts = posts.slice(0, 5);
-
   return (
-    <div className="min-h-screen w-full bg-[#0a0f16] text-white flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
-      {/* Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-slate-800 bg-[#0d1219] sticky top-0 h-screen">
-        <div className="p-6 flex items-center gap-3 cursor-pointer" onClick={() => go('admin-dashboard')}>
-          <div className="bg-[#0d93f2] size-10 rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-white">admin_panel_settings</span>
-          </div>
-          <div>
-            <h1 className="font-bold text-base leading-tight text-white">Admin Central</h1>
-            <p className="text-xs text-slate-400">Platform Management</p>
-          </div>
-        </div>
-        
-        <nav className="flex-1 px-4 py-4 space-y-1">
-          <button onClick={() => go('admin-dashboard')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-500/10 text-blue-400 w-full">
-            <span className="material-symbols-outlined text-xl">dashboard</span>
-            <span className="text-sm font-semibold">Dashboard</span>
-          </button>
-          <button onClick={() => go('admin-users')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors w-full text-left text-slate-400">
-            <span className="material-symbols-outlined text-xl">group</span>
-            <span className="text-sm font-medium">User Management</span>
-          </button>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors w-full text-left text-slate-400">
-            <span className="material-symbols-outlined text-xl">trending_up</span>
-            <span className="text-sm font-medium">Funding Rounds</span>
-          </button>
-          <button onClick={() => go('community')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors w-full text-left text-slate-400">
-            <span className="material-symbols-outlined text-xl">forum</span>
-            <span className="text-sm font-medium">Community Feed</span>
-          </button>
-          <button onClick={() => go('admin-moderation')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors w-full text-left text-slate-400">
-            <span className="material-symbols-outlined text-xl">shield_person</span>
-            <span className="text-sm font-medium">Moderation</span>
-          </button>
-        </nav>
-        
-        <div className="p-4 border-t border-slate-800 mt-auto">
-          <div className="bg-slate-800/50 rounded-xl p-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-20 h-20 bg-green-500/10 rounded-full blur-2xl" />
-            <div className="relative">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">System</span>
-                <div className="size-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
-              </div>
-              <p className="text-sm font-bold text-white mb-0.5">System Healthy</p>
-              <p className="text-[10px] text-slate-500">v4.2.0 - Stable</p>
-            </div>
-          </div>
-        </div>
-      </aside>
+    <div className="min-h-screen w-full bg-[#f5f7f8] dark:bg-[#0a0f16] text-slate-900 dark:text-white flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+      <AdminSidebar go={go} activeView="admin-dashboard" />
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
-        <header className="sticky top-0 z-20 bg-[#0d1219]/80 backdrop-blur-xl border-b border-slate-800 px-6 py-4">
+        <header className="sticky top-0 z-20 bg-white/90 dark:bg-[#0d1219]/80 backdrop-blur-xl border-b border-slate-200 dark:border-slate-800 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">Platform Overview</h2>
-              <p className="text-sm text-slate-400 mt-0.5">Here's what's happening with your portfolio today.</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Platform Overview</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Here's what's happening with your portfolio today.</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="relative">
                 <input 
                   type="text" 
                   placeholder="Search startups, investors..." 
-                  className="w-64 px-4 py-2 pl-10 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+                  className="w-64 px-4 py-2 pl-10 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
                 />
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
               </div>
-              <button className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 relative">
+              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 relative">
                 <span className="material-symbols-outlined">notifications</span>
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-slate-800 text-slate-400">
+              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
                 <span className="material-symbols-outlined">mail</span>
               </button>
-              <button onClick={() => go('settings')} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800">
+              <button onClick={() => go('settings')} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold">
                   {name.charAt(0)}
                 </div>
-                <span className="text-sm font-medium text-slate-300">{name}</span>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{name}</span>
               </button>
             </div>
           </div>
@@ -301,15 +450,15 @@ export default function AdminDashboard({ user, go }) {
               const color = colors[idx] || colors[0];
               
               return (
-                <div key={stat.label} className="bg-[#0f1621] border border-slate-800 rounded-xl p-5">
+                <div key={stat.label} className="bg-white dark:bg-[#0f1621] border border-slate-200 dark:border-slate-800 rounded-xl p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`p-2.5 rounded-lg ${color.bg}`}>
                       <span className={`material-symbols-outlined text-xl ${color.icon}`}>{stat.icon}</span>
                     </div>
-                    <span className={`text-xs font-bold px-2 py-1 rounded ${color.change} bg-green-500/10`}>{stat.change}</span>
+                        <span className="text-[10px] font-bold px-2 py-1 rounded text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700/40">Live</span>
                   </div>
-                  <p className="text-slate-400 text-sm mb-1">{stat.label}</p>
-                  <h3 className="text-2xl font-bold text-white">{loading ? '...' : stat.value}</h3>
+                      <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{stat.label}</p>
+                      <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{loading ? '...' : stat.value}</h3>
                 </div>
               );
             })}
@@ -317,18 +466,18 @@ export default function AdminDashboard({ user, go }) {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
             {/* Investment Volume Chart */}
-            <div className="xl:col-span-2 bg-[#0f1621] border border-slate-800 rounded-xl p-6">
+            <div className="xl:col-span-2 bg-white dark:bg-[#0f1621] border border-slate-200 dark:border-slate-800 rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-lg font-bold text-white mb-1">Investment Volume (USD)</h3>
-                  <p className="text-sm text-slate-400">Last 6 Months</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Investment Volume (USD)</h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Last 6 Months</p>
                 </div>
                 <button className="text-sm text-blue-400 hover:text-blue-300 font-medium">12 months</button>
               </div>
               
               <div className="mb-6">
-                <div className="text-3xl font-bold text-white mb-1">{investmentData.total}</div>
-                <span className="text-sm font-semibold text-green-400">{investmentData.change} vs last period</span>
+                <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">{investmentData.total}</div>
+                <span className="text-sm font-semibold text-green-600">{investmentData.change} vs last period</span>
               </div>
 
               {/* Simple SVG Chart */}
@@ -374,9 +523,9 @@ export default function AdminDashboard({ user, go }) {
             </div>
 
             {/* System Activity */}
-            <div className="bg-[#0f1621] border border-slate-800 rounded-xl p-6">
+            <div className="bg-white dark:bg-[#0f1621] border border-slate-200 dark:border-slate-800 rounded-xl p-6">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white">System Activity</h3>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">System Activity</h3>
               </div>
               
               <div className="space-y-4">
@@ -386,8 +535,8 @@ export default function AdminDashboard({ user, go }) {
                       <span className={`material-symbols-outlined text-lg ${activity.color}`}>{activity.icon}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white mb-0.5">{activity.title}</p>
-                      <p className="text-xs text-slate-400 line-clamp-2">{activity.description}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white mb-0.5">{activity.title}</p>
+                      <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">{activity.description}</p>
                       <p className="text-xs text-slate-500 mt-1">{activity.time}</p>
                     </div>
                   </div>
@@ -403,54 +552,54 @@ export default function AdminDashboard({ user, go }) {
           {/* Bottom Section */}
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             {/* Pending Verifications */}
-            <div className="bg-[#0f1621] border border-slate-800 rounded-xl overflow-hidden">
-              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">Pending Verifications</h3>
+            <div className="bg-white dark:bg-[#0f1621] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Pending Verifications</h3>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400">
-                  {pendingVerifications.length} Pending
+                  {pendingProfiles.length} Pending
                 </span>
               </div>
               
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-800/30">
+                  <thead className="bg-slate-50 dark:bg-slate-800/30">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">User / Organization</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Type</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Submitted</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Action</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">User / Organization</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Submitted</th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/50">
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800/50">
                     {loading ? (
                       <tr>
                         <td colSpan="4" className="px-6 py-8 text-center text-slate-500">Loading...</td>
                       </tr>
-                    ) : pendingVerifications.length === 0 ? (
+                    ) : pendingProfiles.length === 0 ? (
                       <tr>
                         <td colSpan="4" className="px-6 py-8 text-center text-slate-500">No pending verifications</td>
                       </tr>
                     ) : (
-                      pendingVerifications.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-800/20">
+                      pendingProfiles.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
                           <td className="px-6 py-4">
                             <div>
-                              <p className="text-sm font-semibold text-white">{item.name}</p>
-                              <p className="text-xs text-slate-400">{item.contact}</p>
+                              <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{item.contact}</p>
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm text-slate-300">{item.type}</span>
+                            <span className="text-sm text-slate-700 dark:text-slate-300">{item.type}</span>
                           </td>
                           <td className="px-6 py-4">
-                            <span className="text-sm text-slate-400">{item.submitted}</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400">{item.submitted}</span>
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex gap-2">
-                              <button className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-400 transition-colors">
+                              <button onClick={() => handleApproveProfile(item)} className="p-1.5 rounded-lg hover:bg-green-500/10 text-green-400 transition-colors">
                                 <span className="material-symbols-outlined text-xl">check</span>
                               </button>
-                              <button className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors">
+                              <button onClick={() => handleRejectProfile(item)} className="p-1.5 rounded-lg hover:bg-red-500/10 text-red-400 transition-colors">
                                 <span className="material-symbols-outlined text-xl">close</span>
                               </button>
                             </div>
@@ -464,9 +613,9 @@ export default function AdminDashboard({ user, go }) {
             </div>
 
             {/* Community Moderation */}
-            <div className="bg-[#0f1621] border border-slate-800 rounded-xl">
-              <div className="p-6 border-b border-slate-800 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white">Community Moderation</h3>
+            <div className="bg-white dark:bg-[#0f1621] border border-slate-200 dark:border-slate-800 rounded-xl">
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Community Moderation</h3>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-red-500/10 text-red-400">
                   {moderationQueue.length} Flagged
                 </span>
@@ -479,18 +628,18 @@ export default function AdminDashboard({ user, go }) {
                   <div className="text-center text-slate-500 py-8">No flagged content</div>
                 ) : (
                   moderationQueue.map((item) => (
-                    <div key={item.id} className="bg-slate-800/30 rounded-xl p-4">
+                    <div key={item.id} className="bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl p-4">
                       <div className="flex items-start gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm font-bold text-slate-400">{item.author.charAt(0)}</span>
+                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-slate-600 dark:text-slate-400">{item.author.charAt(0)}</span>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-semibold text-white">{item.author}</p>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.author}</p>
                             <span className="text-xs text-slate-500">• {item.time}</span>
                           </div>
-                          <p className="text-xs text-slate-400 mb-2">{item.role}</p>
-                          <p className="text-sm text-slate-300 mb-3 line-clamp-2">{item.content}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">{item.role}</p>
+                          <p className="text-sm text-slate-700 dark:text-slate-300 mb-3 line-clamp-2">{item.content}</p>
                           <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-red-400 text-sm">flag</span>
                             <span className="text-xs font-semibold text-red-400">Reported for: {item.reportReason}</span>
@@ -499,19 +648,19 @@ export default function AdminDashboard({ user, go }) {
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <button className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold rounded-lg transition-colors">
+                        <button onClick={() => handleViewPost(item)} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg transition-colors">
                           View Post
                         </button>
-                        <button className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
+                        <button onClick={() => handleRemovePost(item)} className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors">
                           Remove Post
                         </button>
-                        <button className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-sm font-semibold rounded-lg transition-colors">
+                        <button onClick={() => handleWarnUser(item)} className="px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-sm font-semibold rounded-lg transition-colors">
                           Warn User
                         </button>
-                        <button className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-sm font-semibold rounded-lg transition-colors">
+                        <button onClick={() => handleSuspendUser(item)} disabled={!item.authorId} className="px-4 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-300 text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                           Suspend User
                         </button>
-                        <button className="ml-auto px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-sm font-semibold rounded-lg transition-colors">
+                        <button onClick={() => handleDismissReport(item)} className="ml-auto px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg transition-colors">
                           Dismiss
                         </button>
                       </div>

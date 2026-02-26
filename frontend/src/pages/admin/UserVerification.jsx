@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import AdminSidebar from '../../components/AdminSidebar.jsx';
 
 export default function UserVerification({ user, go }) {
   const [startups, setStartups] = useState([]);
@@ -9,27 +10,25 @@ export default function UserVerification({ user, go }) {
   const [activeTab, setActiveTab] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
   const [adminNote, setAdminNote] = useState('');
+  const [submittingId, setSubmittingId] = useState(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const headers = { Authorization: `Bearer ${token}` };
-        const [startupsRes, investorsRes] = await Promise.all([
-          axios.get('http://localhost:5000/api/startups/', { headers }),
-          axios.get('http://localhost:5000/api/investors/', { headers })
-        ]);
-        setStartups(startupsRes.data || []);
-        setInvestors(investorsRes.data || []);
-      } catch (error) {
-        console.error('Error fetching users:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await axios.get('http://localhost:5000/api/admin/profiles?status=pending', { headers });
+      setStartups(res.data?.startups || []);
+      setInvestors(res.data?.investors || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const sendNotification = async ({ recipientId, recipientType, type, title, message, link, metadata }) => {
     if (!recipientId || !recipientType) return;
@@ -43,43 +42,75 @@ export default function UserVerification({ user, go }) {
 
   const handleApprove = async (item) => {
     try {
-      await sendNotification({
-        recipientId: item.id,
-        recipientType: item.userType,
-        type: 'verification',
-        title: 'Account verified',
-        message: 'Your account has been verified and approved by our team.',
-        link: '/settings',
-        metadata: { userId: item.id }
-      });
+      setSubmittingId(item.id);
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:5000/api/admin/profiles/${item.userType}/${item.id}/review`,
+        { status: 'approved', note: adminNote },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       if (item.userType === 'StartupUser') {
         setStartups((prev) => prev.filter((u) => u._id !== item.id));
       } else {
         setInvestors((prev) => prev.filter((u) => u._id !== item.id));
       }
+      if (selectedUser?.id === item.id) closePreview();
+
+      try {
+        await sendNotification({
+          recipientId: item.id,
+          recipientType: item.userType,
+          type: 'verification',
+          title: 'Account verified',
+          message: 'Your account has been verified and approved by our team.',
+          link: '/settings',
+          metadata: { userId: item.id }
+        });
+      } catch (notifyError) {
+        console.error('Notification failed after approve:', notifyError);
+      }
     } catch (error) {
       console.error('Error approving user:', error);
+    } finally {
+      setSubmittingId(null);
     }
   };
 
   const handleReject = async (item) => {
     try {
-      await sendNotification({
-        recipientId: item.id,
-        recipientType: item.userType,
-        type: 'verification',
-        title: 'Account rejected',
-        message: 'Your account verification was rejected. Please update your profile and reapply.',
-        link: '/settings',
-        metadata: { userId: item.id }
-      });
+      setSubmittingId(item.id);
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `http://localhost:5000/api/admin/profiles/${item.userType}/${item.id}/review`,
+        { status: 'rejected', note: adminNote },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
       if (item.userType === 'StartupUser') {
         setStartups((prev) => prev.filter((u) => u._id !== item.id));
       } else {
         setInvestors((prev) => prev.filter((u) => u._id !== item.id));
       }
+      if (selectedUser?.id === item.id) closePreview();
+
+      try {
+        await sendNotification({
+          recipientId: item.id,
+          recipientType: item.userType,
+          type: 'verification',
+          title: 'Account rejected',
+          message: 'Your account verification was rejected. Please update your profile and reapply.',
+          link: '/settings',
+          metadata: { userId: item.id }
+        });
+      } catch (notifyError) {
+        console.error('Notification failed after reject:', notifyError);
+      }
     } catch (error) {
       console.error('Error rejecting user:', error);
+    } finally {
+      setSubmittingId(null);
     }
   };
 
@@ -91,6 +122,7 @@ export default function UserVerification({ user, go }) {
       role: 'Startup',
       userType: 'StartupUser',
       submitted: new Date(s.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      verificationStatus: s.verificationStatus || 'pending',
       raw: s
     }));
     const mapInvestor = investors.map((i) => ({
@@ -100,6 +132,7 @@ export default function UserVerification({ user, go }) {
       role: 'Investor',
       userType: 'InvestorUser',
       submitted: new Date(i.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      verificationStatus: i.verificationStatus || 'pending',
       raw: i
     }));
     const merged = [...mapStartup, ...mapInvestor];
@@ -135,39 +168,7 @@ export default function UserVerification({ user, go }) {
 
   return (
     <div className="min-h-screen w-full bg-[#f5f7f8] dark:bg-[#101b22] text-slate-900 dark:text-white flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
-      <aside className="hidden lg:flex w-64 flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] sticky top-0 h-screen">
-        <div className="p-6 flex items-center gap-3 cursor-pointer" onClick={() => go('admin-dashboard')}>
-          <div className="bg-[#0d93f2] size-10 rounded-lg flex items-center justify-center">
-            <span className="material-symbols-outlined text-white">admin_panel_settings</span>
-          </div>
-          <div>
-            <h1 className="font-bold text-base leading-tight text-slate-900 dark:text-white">Admin Central</h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">Platform Management</p>
-          </div>
-        </div>
-        <nav className="flex-1 px-4 py-4 space-y-1">
-          <button onClick={() => go('admin-dashboard')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left text-slate-600 dark:text-slate-400">
-            <span className="material-symbols-outlined text-xl">dashboard</span>
-            <span className="text-sm font-medium">Dashboard</span>
-          </button>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-500/10 text-blue-400 w-full">
-            <span className="material-symbols-outlined text-xl">group</span>
-            <span className="text-sm font-semibold">User Management</span>
-          </button>
-          <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left text-slate-600 dark:text-slate-400">
-            <span className="material-symbols-outlined text-xl">trending_up</span>
-            <span className="text-sm font-medium">Funding Rounds</span>
-          </button>
-          <button onClick={() => go('community')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left text-slate-600 dark:text-slate-400">
-            <span className="material-symbols-outlined text-xl">forum</span>
-            <span className="text-sm font-medium">Community Feed</span>
-          </button>
-          <button onClick={() => go('admin-moderation')} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors w-full text-left text-slate-600 dark:text-slate-400">
-            <span className="material-symbols-outlined text-xl">shield_person</span>
-            <span className="text-sm font-medium">Moderation</span>
-          </button>
-        </nav>
-      </aside>
+      <AdminSidebar go={go} activeView="admin-users" />
 
       <main className="flex-1 overflow-y-auto">
         <div className="px-8 py-8">
@@ -371,7 +372,7 @@ export default function UserVerification({ user, go }) {
                 <div className="mb-4">
                   <p className="text-xs text-slate-500">Current Status</p>
                   <div className="mt-2 h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 flex items-center px-3 text-sm text-slate-600 dark:text-slate-300">
-                    Pending Review
+                    {(selectedUser.verificationStatus || 'pending').replace(/^./, (c) => c.toUpperCase())}
                   </div>
                 </div>
                 <div className="mb-4">
@@ -385,13 +386,13 @@ export default function UserVerification({ user, go }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <button onClick={() => handleApprove(selectedUser)} className="w-full rounded-xl bg-[#0d93f2] py-2.5 text-sm font-semibold hover:bg-blue-600">
+                  <button disabled={submittingId === selectedUser.id} onClick={() => handleApprove(selectedUser)} className="w-full rounded-xl bg-[#0d93f2] py-2.5 text-sm font-semibold hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed">
                     Approve Verification
                   </button>
                   <button className="w-full rounded-xl bg-slate-100 dark:bg-slate-800 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700">
                     Request More Info
                   </button>
-                  <button onClick={() => handleReject(selectedUser)} className="w-full rounded-xl bg-red-500/10 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/20">
+                  <button disabled={submittingId === selectedUser.id} onClick={() => handleReject(selectedUser)} className="w-full rounded-xl bg-red-500/10 py-2.5 text-sm font-semibold text-red-300 hover:bg-red-500/20 disabled:opacity-60 disabled:cursor-not-allowed">
                     Reject Application
                   </button>
                 </div>
