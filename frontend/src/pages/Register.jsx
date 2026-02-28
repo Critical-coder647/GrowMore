@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import logoGM from '../../asset/logoGM.png';
 
 function Register({ onAuth, go }) {
   const [formData, setFormData] = useState({
@@ -44,9 +45,7 @@ function Register({ onAuth, go }) {
             <div className="absolute inset-0 bg-gradient-to-t from-[#0d161c] via-transparent to-[#0d161c]/40 z-0" />
             {/* Header / Logo */}
             <div className="relative z-10 flex items-center gap-3 text-white cursor-pointer" onClick={() => go('landing')}>
-              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-[#0d93f2]/20 backdrop-blur-sm border border-white/10">
-                <span className="material-symbols-outlined text-white">rocket_launch</span>
-              </div>
+              <img src={logoGM} alt="GrowMore" className="h-10 w-10 object-contain" />
               <h2 className="text-xl font-bold tracking-tight">GrowMore</h2>
             </div>
             {/* Main Content Area */}
@@ -88,12 +87,22 @@ function Register({ onAuth, go }) {
             {/* Mobile Header (Visible only on small screens) */}
             <div className="lg:hidden flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
               <div className="flex items-center gap-2 text-[#0d161c] dark:text-white cursor-pointer" onClick={() => go('landing')}>
-                <span className="material-symbols-outlined text-[#0d93f2]">rocket_launch</span>
+                <img src={logoGM} alt="GrowMore" className="h-7 w-7 object-contain" />
                 <span className="font-bold text-lg">GrowMore</span>
               </div>
             </div>
             <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-12 lg:p-24">
               <div className="w-full max-w-[480px] flex flex-col gap-8">
+                <div className="flex justify-start">
+                  <button
+                    type="button"
+                    onClick={() => go('landing')}
+                    className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-base">arrow_back</span>
+                    Back 
+                  </button>
+                </div>
                 {/* Form Header */}
                 <div className="flex flex-col gap-2 text-center sm:text-left">
                   <h2 className="text-[#0d161c] dark:text-white text-3xl font-bold leading-tight tracking-[-0.015em]">Create your account</h2>

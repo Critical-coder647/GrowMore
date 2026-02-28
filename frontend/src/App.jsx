@@ -75,7 +75,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f7f8] dark:bg-[#101b22]">
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'investor-connect' && view !== 'landing' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'investor-connect' && view !== 'landing' && view !== 'login' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
         <nav className="sticky top-0 z-50 bg-[#f5f7f8]/90 dark:bg-[#101b22]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
           <div className="flex justify-center w-full">
             <div className="flex items-center justify-between w-full max-w-7xl px-6 py-4">

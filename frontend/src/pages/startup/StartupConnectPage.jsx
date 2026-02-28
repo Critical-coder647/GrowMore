@@ -167,84 +167,87 @@ export default function StartupConnectPage({ go, user }) {
                   <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-700 px-4 py-3">
                     <div className="flex gap-4">
                       <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
-                </section>
+                        <span className="material-symbols-outlined text-base">favorite</span>
+                        {post.likes}
                       </button>
-                {/* Right Sidebar */}
-                <aside className="hidden xl:flex w-80 flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar">
-                  {/* Messages */}
-                  <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] shadow-sm border border-slate-200 dark:border-slate-800 h-full max-h-[600px]">
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Messages</h4>
-                      <div className="flex gap-2">
-                        <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
-                          <span className="material-symbols-outlined text-lg">edit_square</span>
-                        </button>
-                        <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
-                          <span className="material-symbols-outlined text-lg">more_horiz</span>
-                        </button>
-                      </div>
+                      <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
+                        <span className="material-symbols-outlined text-base">chat_bubble</span>
+                        {post.comments}
+                      </button>
                     </div>
-                    <div className="flex flex-col flex-1 overflow-y-auto p-2">
-                      {messages.map((msg) => (
-                        <div key={msg.id} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                          <div className="relative">
-                            <div className="size-10 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
-                            {msg.online && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white dark:border-[#111a22] bg-green-500" />}
-                          </div>
-                          <div className="flex flex-1 flex-col overflow-hidden">
-                            <div className="flex justify-between items-baseline">
-                              <h5 className="truncate text-sm font-bold text-slate-900 dark:text-white">{msg.name}</h5>
-                              <span className="text-[10px] text-slate-600 dark:text-slate-400">{msg.time}</span>
-                            </div>
-                            <p className={`truncate text-xs ${msg.unread ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{msg.lastMessage}</p>
-                          </div>
-                          {msg.unread && <div className="flex size-4 items-center justify-center rounded-full bg-[#0d93f2] text-[10px] font-bold text-white">1</div>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Mentors */}
-                  <div className="flex flex-col gap-3 rounded-xl bg-white dark:bg-[#111a22] p-4 shadow-sm border border-slate-200 dark:border-slate-800">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white">Suggested Mentors</h4>
-                      <button className="text-xs font-bold text-[#0d93f2] hover:underline">See All</button>
-                    </div>
-                    <div className="flex flex-col gap-3">
-                      {[
-                        { name: 'Dr. Emily White', role: 'CTO at TechGiant' },
-                        { name: 'Alex Brown', role: 'Product Lead at StartupX' }
-                      ].map((mentor) => (
-                        <div key={mentor.name} className="flex items-center gap-3">
-                          <div className="size-9 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
-                          <div className="flex flex-1 flex-col">
-                            <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mentor.name}</h5>
-                            <p className="text-[10px] text-slate-600 dark:text-slate-400">{mentor.role}</p>
-                          </div>
-                          <button className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                            <span className="material-symbols-outlined text-lg">person_add</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </aside>
-              </div>
-            </main>
-                    <div className="size-9 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
-                    <div className="flex flex-1 flex-col">
-                      <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mentor.name}</h5>
-                      <p className="text-[10px] text-slate-600 dark:text-slate-400">{mentor.role}</p>
-                    </div>
-                    <button className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-                      <span className="material-symbols-outlined text-lg">person_add</span>
+                    <button className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#0d93f2] dark:text-slate-400 transition-colors">
+                      <span className="material-symbols-outlined text-base">share</span>
+                      Share
                     </button>
                   </div>
-                ))}
+                </div>
+              ))}
+            </section>
+
+            </section>
+
+            {/* Right Sidebar */}
+            <aside className="hidden xl:flex w-80 flex-col gap-6 sticky top-6 h-[calc(100vh-3rem)] overflow-y-auto no-scrollbar">
+              {/* Messages */}
+              <div className="flex flex-col rounded-xl bg-white dark:bg-[#111a22] shadow-sm border border-slate-200 dark:border-slate-800 h-full max-h-[600px]">
+                <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 p-4">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Messages</h4>
+                  <div className="flex gap-2">
+                    <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
+                      <span className="material-symbols-outlined text-lg">edit_square</span>
+                    </button>
+                    <button className="text-slate-600 hover:text-[#0d93f2] dark:text-slate-400">
+                      <span className="material-symbols-outlined text-lg">more_horiz</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col flex-1 overflow-y-auto p-2">
+                  {messages.map((msg) => (
+                    <div key={msg.id} className="flex cursor-pointer items-center gap-3 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                      <div className="relative">
+                        <div className="size-10 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
+                        {msg.online && <span className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-white dark:border-[#111a22] bg-green-500" />}
+                      </div>
+                      <div className="flex flex-1 flex-col overflow-hidden">
+                        <div className="flex justify-between items-baseline">
+                          <h5 className="truncate text-sm font-bold text-slate-900 dark:text-white">{msg.name}</h5>
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400">{msg.time}</span>
+                        </div>
+                        <p className={`truncate text-xs ${msg.unread ? 'font-bold text-slate-900 dark:text-white' : 'text-slate-600 dark:text-slate-400'}`}>{msg.lastMessage}</p>
+                      </div>
+                      {msg.unread && <div className="flex size-4 items-center justify-center rounded-full bg-[#0d93f2] text-[10px] font-bold text-white">1</div>}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </aside>
-        </div>
+
+              {/* Mentors */}
+              <div className="flex flex-col gap-3 rounded-xl bg-white dark:bg-[#111a22] p-4 shadow-sm border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">Suggested Mentors</h4>
+                  <button className="text-xs font-bold text-[#0d93f2] hover:underline">See All</button>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { name: 'Dr. Emily White', role: 'CTO at TechGiant' },
+                    { name: 'Alex Brown', role: 'Product Lead at StartupX' }
+                  ].map((mentor) => (
+                    <div key={mentor.name} className="flex items-center gap-3">
+                      <div className="size-9 rounded-full bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
+                      <div className="flex flex-1 flex-col">
+                        <h5 className="text-sm font-bold text-slate-900 dark:text-white">{mentor.name}</h5>
+                        <p className="text-[10px] text-slate-600 dark:text-slate-400">{mentor.role}</p>
+                      </div>
+                      <button className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <span className="material-symbols-outlined text-lg">person_add</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </main>
       </div>
     </>
   );

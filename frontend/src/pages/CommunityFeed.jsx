@@ -4,6 +4,16 @@ import AdminSidebar from '../components/AdminSidebar.jsx';
 import StartupSidebar from '../components/StartupSidebar.jsx';
 import InvestorSidebar from '../components/InvestorSidebar.jsx';
 
+const asArray = (value) => (Array.isArray(value) ? value : []);
+
+const normalizePost = (post) => ({
+  ...post,
+  likes: asArray(post?.likes),
+  comments: asArray(post?.comments),
+  media: asArray(post?.media),
+  tags: asArray(post?.tags)
+});
+
 function CommunityFeed({ user, go }) {
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState('');
@@ -40,7 +50,7 @@ function CommunityFeed({ user, go }) {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [user?.id]);
 
   useEffect(() => {
     const focusId = localStorage.getItem('communityFocusPostId');
@@ -54,16 +64,19 @@ function CommunityFeed({ user, go }) {
   }, [posts]);
 
   const fetchPosts = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get('http://localhost:5000/api/community/posts', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      const postsData = Array.isArray(response.data) ? response.data : response.data.posts;
-      setPosts(postsData || []);
+      const postsData = Array.isArray(response.data) ? response.data : response.data?.posts;
+      const normalizedPosts = asArray(postsData).map(normalizePost);
+      setPosts(normalizedPosts);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching posts:', error);
+      setPosts([]);
       setLoading(false);
     }
   };
@@ -357,7 +370,7 @@ function CommunityFeed({ user, go }) {
                             <span className="text-sm text-slate-500 dark:text-slate-400"></span>
                             <span className="text-sm text-slate-500 dark:text-slate-400">{new Date(post.createdAt).toLocaleDateString()}</span>
                           </div>
-                          {post.userId === user?.id && (
+                          {String(post.userId) === String(user?.id) && (
                             <div className="relative">
                               <button onClick={() => toggleMenu(post._id)} className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
                                 <span className="material-symbols-outlined">more_vert</span>
@@ -392,7 +405,7 @@ function CommunityFeed({ user, go }) {
                         ) : (
                           <p className="mt-2 text-slate-700 dark:text-slate-300">{post.content}</p>
                         )}
-                        {post.media && post.media.length > 0 && (
+                        {Array.isArray(post.media) && post.media.length > 0 && (
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             {post.media.map((mediaItem, index) => (
                               <div key={index} className="rounded-lg overflow-hidden">
@@ -405,7 +418,7 @@ function CommunityFeed({ user, go }) {
                             ))}
                           </div>
                         )}
-                        {post.tags && post.tags.length > 0 && (
+                        {Array.isArray(post.tags) && post.tags.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2">
                             {post.tags.map((tag, index) => (
                               <span key={index} className="rounded-full bg-[#0d93f2]/10 px-3 py-1 text-xs font-medium text-[#0d93f2]">#{tag}</span>
@@ -415,11 +428,11 @@ function CommunityFeed({ user, go }) {
                         <div className="mt-4 flex items-center gap-6">
                           <button onClick={() => handleLike(post._id)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
                             <span className="material-symbols-outlined text-xl">favorite</span>
-                            <span className="text-sm font-medium">{post.likes?.length || 0}</span>
+                            <span className="text-sm font-medium">{Array.isArray(post.likes) ? post.likes.length : 0}</span>
                           </button>
                           <button onClick={() => toggleComments(post._id)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
                             <span className="material-symbols-outlined text-xl">mode_comment</span>
-                            <span className="text-sm font-medium">{post.comments?.length || 0}</span>
+                            <span className="text-sm font-medium">{Array.isArray(post.comments) ? post.comments.length : 0}</span>
                           </button>
                           <button onClick={() => handleShare(post)} className="flex items-center gap-2 text-slate-500 hover:text-[#0d93f2] dark:text-slate-400">
                             <span className="material-symbols-outlined text-xl">share</span>
@@ -433,7 +446,7 @@ function CommunityFeed({ user, go }) {
                         {expandedComments[post._id] && (
                           <div className="mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
                             <div className="space-y-3 mb-4">
-                              {post.comments && post.comments.length > 0 ? (
+                              {Array.isArray(post.comments) && post.comments.length > 0 ? (
                                 post.comments.map((comment, idx) => (
                                   <div key={idx} className="flex gap-3">
                                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700">
@@ -444,7 +457,7 @@ function CommunityFeed({ user, go }) {
                                         <p className="text-xs font-bold text-slate-900 dark:text-white">{comment.userName}</p>
                                         <p className="text-sm text-slate-700 dark:text-slate-300">{comment.content}</p>
                                       </div>
-                                      <p className="text-xs text-slate-400 mt-1">{new Date(comment.createdAt).toLocaleString()}</p>
+                                      <p className="text-xs text-slate-400 mt-1">{new Date(comment.createdAt || comment.timestamp || Date.now()).toLocaleString()}</p>
                                     </div>
                                   </div>
                                 ))

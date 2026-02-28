@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import logoGM from '../../asset/logoGM.png';
 
 function Login({ onAuth, go }) {
   const [formData, setFormData] = useState({
@@ -48,33 +49,6 @@ function Login({ onAuth, go }) {
 
   return (
     <div className="min-h-screen bg-[#f5f7f8] dark:bg-[#101b22]" style={{ fontFamily: 'Manrope, sans-serif' }}>
-      {/* Header / Nav (Simplified for Login) */}
-      <header className="flex items-center justify-between px-6 py-4 lg:px-12 lg:py-6 w-full absolute top-0 left-0 z-10">
-         <div className="flex items-center gap-3 cursor-pointer" onClick={() => go('landing')}>
-          <div className="w-8 h-8 text-[#0d93f2]">
-            <svg
-              fill="currentColor"
-              viewBox="0 0 48 48"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M6 6H42L36 24L42 42H6L12 24L6 6Z" />
-            </svg>
-          </div>
-          <h2 className="text-slate-900 dark:text-white text-xl font-bold leading-tight tracking-tight">
-            GrowMore
-          </h2>
-        </div>
-        <div className="hidden sm:flex text-sm font-medium text-slate-600 dark:text-slate-400">
-          Don't have an account?{" "}
-          <button
-            onClick={handleSignup}
-            className="ml-2 text-[#0d93f2] hover:text-blue-600 transition-colors font-medium"
-          >
-            Sign up
-          </button>
-        </div>
-      </header>
-
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col lg:flex-row min-h-screen">
         {/* Left Side: Visual/Hero */}
@@ -87,6 +61,10 @@ function Login({ onAuth, go }) {
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+          <div className="absolute left-10 top-10 z-10 flex items-center gap-3 cursor-pointer text-white" onClick={() => go('landing')}>
+            <img src={logoGM} alt="GrowMore" className="h-10 w-10 object-contain" />
+            <h2 className="text-xl font-bold tracking-tight">GrowMore</h2>
+          </div>
           <div className="relative z-10 flex flex-col justify-end p-16 h-full text-white max-w-2xl">
             <div className="mb-8">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0d93f2]/20 border border-[#0d93f2]/30 text-[#0d93f2] text-xs font-bold uppercase tracking-wider mb-6">
@@ -136,14 +114,40 @@ function Login({ onAuth, go }) {
         </div>
 
         {/* Right Side: Login Form */}
-        <div className="w-full lg:w-1/2 flex items-center justify-center px-6 py-20 lg:p-16 overflow-y-auto bg-[#f5f7f8] dark:bg-[#101b22]">
+        <div className="w-full lg:w-1/2 flex flex-col h-screen overflow-y-auto bg-[#f5f7f8] dark:bg-[#101b22]">
+          <div className="lg:hidden flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-2 text-[#0d161c] dark:text-white cursor-pointer" onClick={() => go('landing')}>
+              <img src={logoGM} alt="GrowMore" className="h-7 w-7 object-contain" />
+              <span className="font-bold text-lg">GrowMore</span>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-6 py-10 lg:p-16">
           <div className="w-full max-w-md flex flex-col gap-8">
-            <div className="text-center lg:text-left pt-10 lg:pt-0">
+            <div className="flex justify-start">
+              <button
+                type="button"
+                onClick={() => go('landing')}
+                className="flex items-center gap-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <span className="material-symbols-outlined text-base">arrow_back</span>
+                Back
+              </button>
+            </div>
+            <div className="text-center lg:text-left">
               <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
                 Welcome Back
               </h1>
               <p className="text-slate-500 dark:text-slate-400">
                 Please enter your details to sign in.
+              </p>
+              <p className="hidden sm:block mt-2 text-sm text-slate-600 dark:text-slate-400">
+                Don't have an account?{' '}
+                <button
+                  onClick={handleSignup}
+                  className="font-bold text-[#0d93f2] hover:text-blue-600"
+                >
+                  Sign up
+                </button>
               </p>
             </div>
 
@@ -284,6 +288,7 @@ function Login({ onAuth, go }) {
                 </button>
               </p>
             </div>
+          </div>
           </div>
         </div>
       </main>
