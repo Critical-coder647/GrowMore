@@ -21,7 +21,11 @@ import NotificationPage from './pages/Notficationpg.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 import CommunityModeration from './pages/admin/CommunityModeration.jsx';
 import UserVerification from './pages/admin/UserVerification.jsx';
+import FundingRoundsManagement from './pages/admin/FundingRoundsManagement.jsx';
+import VerificationReviewPage from './pages/admin/VerificationReviewPage.jsx';
 import MessagesPage from './pages/Messages.jsx';
+import PublicProfilePreview from './pages/PublicProfilePreview.jsx';
+import client from './api/client.js';
 
 export default function App() {
   const storedToken = localStorage.getItem('token');
@@ -57,12 +61,40 @@ export default function App() {
     return () => clearTimeout(timeout);
   }, [view]);
 
+  useEffect(() => {
+    const profileStepViews = ['profile-step-1', 'profile-step-2', 'profile-step-3', 'profile-step-4', 'profile-step-5'];
+    if (!token || user?.role !== 'startup' || !profileStepViews.includes(view)) return;
+
+    const enforceVerifiedStartupGuard = async () => {
+      try {
+        const response = await client.get('/auth/me');
+        const status = String(response.data?.verificationStatus || '').toLowerCase();
+        if (status === 'approved') {
+          const mergedUser = {
+            ...(user || {}),
+            verificationStatus: 'approved'
+          };
+          setUser(mergedUser);
+          localStorage.setItem('user', JSON.stringify(mergedUser));
+          setView('startup-dashboard');
+        }
+      } catch (error) {
+        console.error('Failed to validate startup verification status:', error);
+      }
+    };
+
+    enforceVerifiedStartupGuard();
+  }, [view, token, user]);
+
   function handleAuth({ token, user }) {
     setToken(token);
     setUser(user);
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
-    if (user.role === 'startup') setView('profile-step-1');
+    if (user.role === 'startup') {
+      const status = String(user.verificationStatus || '').toLowerCase();
+      setView(status === 'approved' ? 'startup-dashboard' : 'profile-step-1');
+    }
     else if (user.role === 'investor') setView('investor-dashboard');
     else if (user.role === 'admin') setView('admin-dashboard');
     else setView('login');
@@ -75,7 +107,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f7f8] dark:bg-[#101b22]">
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'investor-connect' && view !== 'landing' && view !== 'login' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-funding-rounds' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'admin-verification-review' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'investor-connect' && view !== 'landing' && view !== 'login' && view !== 'register' && view !== 'settings' && view !== 'community' && view !== 'notifications' && view !== 'messages' && view !== 'public-profile' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && (
         <nav className="sticky top-0 z-50 bg-[#f5f7f8]/90 dark:bg-[#101b22]/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
           <div className="flex justify-center w-full">
             <div className="flex items-center justify-between w-full max-w-7xl px-6 py-4">
@@ -143,15 +175,18 @@ export default function App() {
         {token && view === 'investor-profile' && <InvestorProfile user={user} go={go} />}
         {token && view === 'investor-connect' && <InvestorConnectPage user={user} go={go} />}
         {token && view === 'admin-dashboard' && <AdminDashboard user={user} go={go} />}
+        {token && view === 'admin-funding-rounds' && <FundingRoundsManagement user={user} go={go} />}
         {token && view === 'admin-moderation' && <CommunityModeration user={user} go={go} />}
         {token && view === 'admin-users' && <UserVerification user={user} go={go} />}
+        {token && view === 'admin-verification-review' && <VerificationReviewPage user={user} go={go} />}
         {token && view === 'messages' && <MessagesPage user={user} go={go} />}
+        {token && view === 'public-profile' && <PublicProfilePreview user={user} go={go} profileUserId={localStorage.getItem('publicProfileUserId')} />}
         {token && view === 'community' && <CommunityFeed user={user} go={go} />}
         {token && view === 'notifications' && <NotificationPage user={user} go={go} />}
-        {token && view === 'settings' && <Settings user={user} go={go} logout={logout} />}
+        {token && view === 'settings' && <Settings user={user} go={go} logout={logout} onUserUpdated={setUser} />}
         {token && view === 'matching' && <div className="max-w-6xl mx-auto p-6"><MatchingPage user={user} go={go} /></div>}
       </main>
-      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'community' && view !== 'settings' && view !== 'messages' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && view !== 'investor-connect' && (
+      {view !== 'investor-dashboard' && view !== 'startup-dashboard' && view !== 'admin-dashboard' && view !== 'admin-funding-rounds' && view !== 'admin-moderation' && view !== 'admin-users' && view !== 'admin-verification-review' && view !== 'startup-profile' && view !== 'startup-funding' && view !== 'startup-connect' && view !== 'investor-profile' && view !== 'landing' && view !== 'register' && view !== 'community' && view !== 'settings' && view !== 'messages' && view !== 'public-profile' && view !== 'profile-step-1' && view !== 'profile-step-2' && view !== 'profile-step-3' && view !== 'profile-step-4' && view !== 'profile-step-5' && view !== 'investor-connect' && (
         <footer className="py-8 text-center border-t border-slate-200 dark:border-slate-800">
           <p className="text-xs text-slate-400">
             © {new Date().getFullYear()} GrowMore Inc. All rights reserved.

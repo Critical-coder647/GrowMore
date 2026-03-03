@@ -1,36 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import client from '../../api/client.js';
 import StartupSidebar from '../../components/StartupSidebar.jsx';
+import UserSearchResults from '../../components/UserSearchResults.jsx';
 
 export default function StartupConnectPage({ go, user }) {
   const [connections, setConnections] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
-  const [investors, setInvestors] = useState([
-    {
-      id: 1,
-      name: 'Sarah Chen',
-      role: 'Partner at Sequoia Capital',
-      match: 98,
-      tags: ['SaaS', 'AI', 'Seed'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuADBEo25j7l6WzwyICUCIb7sZ6-ZXL317eGM5ThwzIUcIRoRV10-gaZ2jSi8EK2c9aat3rdwSeRZjZKnz-_RmUZ6pOa6Yb55NHCta_A3G1mEoLNmwiYBM3wUMpfo4Rq78SVDRX7hQ7rOspQRTtrt_U-SBQJo6G5jqaiXQxt8-aQvtWnAHxPWXhrTb8zvMgShbeNVz_S-qmUIx_OqVo7dcLH7d8ahFK1e6nPYMz_XsXKQ5TykFU1gAIGe2KcIFW4kG78E58u6W5Wdr4'
-    },
-    {
-      id: 2,
-      name: 'Marcus Johnson',
-      role: 'Angel Investor • Ex-Stripe',
-      match: 92,
-      tags: ['Fintech', 'Pre-Seed'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuClLGXRKWkXOIiatZ-vIi2q4gCvxRiak76lua7imRmpsjtkYLPyAH0D91xahx16W1Glq4lPhLTD8qFjdWSc1nfxjOkEzEv5p0UQ7jTQsV9yZzZ2PXgGIcjCY19kMTSkcG3RlFlEwazGUPhRGcPcsJRgxBMgenNIqaC6mgHUmcDpW9rcBZoNzkrvIAESe97rm_fR4dyH-O-FpeuDp1NJ0hDqk6mYd_ud2n4SxY_KomZ-lKVg_wxcS_3FkyX4uUx73aPHDnLnMOJGA_M'
-    },
-    {
-      id: 3,
-      name: 'Elena Rodriguez',
-      role: 'Growth Mentor • Techstars',
-      match: 88,
-      tags: ['Growth', 'Marketing'],
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCdDBzgtRd-Ms2L-uhwxkV3EMbOQMDRbdAZfikKbgtf2CFcAOuLx15N-__Uq4NwhZmVAzzwA3TgVkWuFLrqgl1iHs7AEUDwjEBmIFEIdN1hTZ_r1saqlsvmlrHWg5CStPf96p_aw8BXTpKecYfqjO8DZT6Nb0hNPyjBreY7OzUSoIrE0MvDYKCidNbO-Wb7N6Q57Fr4Zb1gi1c2DHlDkXFM3xBg7GMe6PKwazcCgUStRCaSxloV_b73khL7qa1UtDmAnj3jx5MoZE4'
-    }
-  ]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [investors, setInvestors] = useState([]);
   const [posts, setPosts] = useState([
     {
       id: 1,
@@ -60,6 +37,30 @@ export default function StartupConnectPage({ go, user }) {
     { id: 3, name: 'Michael Ross', lastMessage: 'Great catch up!', time: '1d', online: true, unread: false }
   ]);
 
+  useEffect(() => {
+    const loadSuggestedInvestors = async () => {
+      try {
+        const response = await client.get('/auth/search-users', { params: { limit: 20 } });
+        const users = Array.isArray(response.data) ? response.data : [];
+        const investorUsers = users
+          .filter((person) => person.role === 'investor')
+          .map((person, index) => ({
+            id: person.id,
+            name: person.name,
+            role: person.subtitle || 'Investor',
+            match: Math.max(80, 98 - index * 3),
+            tags: ['Investor', 'Growth', 'Capital']
+          }));
+        setInvestors(investorUsers);
+      } catch (error) {
+        console.error('Error loading suggested investors:', error);
+        setInvestors([]);
+      }
+    };
+
+    loadSuggestedInvestors();
+  }, []);
+
   const handleConnect = async (investorId) => {
     try {
       setConnections(prev => ({ ...prev, [investorId]: 'pending' }));
@@ -69,6 +70,24 @@ export default function StartupConnectPage({ go, user }) {
       console.error('Connection request failed:', err);
       setConnections(prev => ({ ...prev, [investorId]: 'error' }));
     }
+  };
+
+  const openMessagesWithPartner = (partner) => {
+    localStorage.setItem(
+      'messagePartner',
+      JSON.stringify({
+        id: String(partner.id),
+        name: partner.name,
+        role: 'investor',
+        subtitle: partner.role || 'Investor'
+      })
+    );
+    go('messages');
+  };
+
+  const openPublicProfile = (partnerId) => {
+    localStorage.setItem('publicProfileUserId', String(partnerId));
+    go('public-profile');
   };
 
   return (
@@ -91,9 +110,30 @@ export default function StartupConnectPage({ go, user }) {
                 <div className="flex size-12 items-center justify-center text-slate-600 dark:text-slate-400">
                   <span className="material-symbols-outlined">search</span>
                 </div>
-                <input className="h-12 w-full flex-1 border-none bg-transparent text-base text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-0" placeholder="Search for investors, mentors, or specific funds..." type="text" />
+                <input
+                  className="h-12 w-full flex-1 border-none bg-transparent text-base text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:ring-0"
+                  placeholder="Search for investors, mentors, or specific funds..."
+                  type="text"
+                  value={searchQuery}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 120)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                />
                 <button className="mr-1 rounded-lg bg-[#0d93f2] px-6 py-2.5 text-sm font-bold text-white shadow-md hover:bg-blue-600 transition-colors">Find</button>
               </div>
+              <UserSearchResults
+                query={searchQuery}
+                isOpen={isSearchOpen}
+                user={user}
+                go={go}
+                onSelect={() => {
+                  setSearchQuery('');
+                  setIsSearchOpen(false);
+                }}
+              />
             </div>
 
             {/* Top Picks */}
@@ -112,11 +152,9 @@ export default function StartupConnectPage({ go, user }) {
                       <div className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-emerald-600 shadow-sm backdrop-blur-sm">{inv.match}% Match</div>
                     </div>
                     <div className="relative flex flex-col items-center px-5 pb-5">
-                      <div className="-mt-12 mb-3 size-24 overflow-hidden rounded-full border-4 border-white dark:border-[#111a22] shadow-sm">
-                        <img alt="Investor" className="h-full w-full object-cover" src={inv.image} />
-                      </div>
+                      <div className="-mt-12 mb-3 size-24 overflow-hidden rounded-full border-4 border-white dark:border-[#111a22] shadow-sm bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]" />
                       <div className="mb-1 flex items-center gap-1">
-                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">{inv.name}</h3>
+                        <button onClick={() => openPublicProfile(inv.id)} className="text-lg font-bold text-slate-900 dark:text-white hover:text-[#0d93f2] transition-colors">{inv.name}</button>
                         <span className="material-symbols-outlined text-base text-[#0d93f2]">verified</span>
                       </div>
                       <p className="mb-3 text-center text-sm font-medium text-slate-600 dark:text-slate-400">{inv.role}</p>
@@ -129,7 +167,7 @@ export default function StartupConnectPage({ go, user }) {
                         <button onClick={() => handleConnect(inv.id)} className="flex items-center justify-center rounded-xl bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-blue-600 transition-colors">
                           {connections[inv.id] === 'pending' ? 'Connecting...' : connections[inv.id] === 'sent' ? 'Sent' : 'Connect'}
                         </button>
-                        <button onClick={() => go('messages')} className="flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white border border-transparent hover:border-slate-300 dark:hover:border-slate-600 transition-colors">Message</button>
+                        <button onClick={() => openMessagesWithPartner(inv)} className="flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-2.5 text-sm font-bold text-slate-900 dark:text-white border border-transparent hover:border-slate-300 dark:hover:border-slate-600 transition-colors">Message</button>
                       </div>
                     </div>
                   </div>

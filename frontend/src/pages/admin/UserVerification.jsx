@@ -152,8 +152,8 @@ export default function UserVerification({ user, go }) {
   }, [startups, investors, activeTab, query]);
 
   const openPreview = (item) => {
-    setSelectedUser(item);
-    setAdminNote('');
+    localStorage.setItem('adminVerificationTarget', JSON.stringify({ id: item.id, userType: item.userType }));
+    go('admin-verification-review');
   };
 
   const closePreview = () => {

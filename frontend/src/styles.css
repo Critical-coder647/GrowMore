@@ -4,3 +4,65 @@
 
 .progress-bar { @apply h-2 rounded bg-gray-200 overflow-hidden; }
 .progress-fill { @apply h-full bg-brand transition-all duration-500; }
+
+@layer base {
+	html {
+		color-scheme: light;
+	}
+
+	html.dark {
+		color-scheme: dark;
+	}
+
+	html,
+	body,
+	#root {
+		min-height: 100%;
+		color: rgb(15 23 42);
+		background-color: rgb(245 247 248);
+	}
+
+	.dark body,
+	.dark #root {
+		color: rgb(226 232 240);
+		background-color: rgb(16 27 34);
+	}
+
+	input,
+	textarea,
+	select,
+	button {
+		color: inherit;
+	}
+
+	::placeholder {
+		color: rgb(100 116 139);
+		opacity: 1;
+	}
+
+	.dark ::placeholder {
+		color: rgb(148 163 184);
+	}
+}
+
+@layer utilities {
+	html:not(.dark) .text-red-300,
+	html:not(.dark) .text-red-200 {
+		color: rgb(185 28 28) !important;
+	}
+
+	html:not(.dark) .text-amber-400,
+	html:not(.dark) .text-amber-300,
+	html:not(.dark) .text-yellow-400 {
+		color: rgb(180 83 9) !important;
+	}
+
+	html:not(.dark) .text-blue-200 {
+		color: rgb(29 78 216) !important;
+	}
+
+	button:disabled,
+	[role='button'][aria-disabled='true'] {
+		opacity: 0.72 !important;
+	}
+}

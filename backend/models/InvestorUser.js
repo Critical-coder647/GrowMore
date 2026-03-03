@@ -20,6 +20,12 @@ const investorUserSchema = new mongoose.Schema({
   pastActivity: [{ type: String }],
   checkSize: { type: Number },
   thesis: { type: String },
+  website: { type: String },
+  phone: { type: String },
+  headline: { type: String },
+  bio: { type: String },
+  linkedin: { type: String },
+  twitter: { type: String },
   verificationStatus: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

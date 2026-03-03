@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getProfileSetupFile, setProfileSetupFile } from '../../utils/profileSetupFiles.js';
 
 function ProfileStep2BusinessDetails({ user, go }) {
   const [formData, setFormData] = useState({
@@ -11,18 +12,33 @@ function ProfileStep2BusinessDetails({ user, go }) {
     tam: '',
     sam: '',
     som: '',
-    pitchDeck: null
+    pitchDeck: null,
+    pitchDeckName: ''
   });
 
   const [teamMembers, setTeamMembers] = useState([]);
   const [error, setError] = useState('');
   const [postToFeed, setPostToFeed] = useState(false);
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  const getSavedProfileData = () => {
+    try {
+      const saved = localStorage.getItem('profileSetupData');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveProfileData = (updates) => {
+    const existing = getSavedProfileData();
+    localStorage.setItem('profileSetupData', JSON.stringify({ ...existing, ...updates }));
+  };
 
   useEffect(() => {
     // Load saved data from Step 1 and Step 2
-    const saved = localStorage.getItem('profileSetupData');
-    if (saved) {
-      const data = JSON.parse(saved);
+    const data = getSavedProfileData();
+    if (Object.keys(data).length > 0) {
       setFormData(prev => ({
         ...prev,
         website: data.website || '',
@@ -33,11 +49,28 @@ function ProfileStep2BusinessDetails({ user, go }) {
         solution: data.solution || '',
         tam: data.tam || '',
         sam: data.sam || '',
-        som: data.som || ''
+        som: data.som || '',
+        pitchDeckName: data.pitchDeckName || ''
       }));
+      const draftPitchDeck = getProfileSetupFile('pitchDeck');
+      if (draftPitchDeck) {
+        setFormData(prev => ({
+          ...prev,
+          pitchDeck: draftPitchDeck,
+          pitchDeckName: draftPitchDeck.name || prev.pitchDeckName
+        }));
+      }
       if (data.teamMembers) setTeamMembers(data.teamMembers);
+      setPostToFeed(Boolean(data.postToFeed));
     }
+    setHasHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    const { pitchDeck, ...rest } = formData;
+    saveProfileData({ ...rest, teamMembers, postToFeed });
+  }, [formData, teamMembers, postToFeed, hasHydrated]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,7 +82,8 @@ function ProfileStep2BusinessDetails({ user, go }) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       if (file.type === 'application/pdf' && file.size <= 10 * 1024 * 1024) {
-        setFormData(prev => ({ ...prev, pitchDeck: file }));
+        setFormData(prev => ({ ...prev, pitchDeck: file, pitchDeckName: file.name }));
+        setProfileSetupFile('pitchDeck', file);
         setError('');
       } else {
         setError('Please upload a PDF file smaller than 10MB');
@@ -64,18 +98,20 @@ function ProfileStep2BusinessDetails({ user, go }) {
     }
 
     // Save data
+    const { pitchDeck, ...rest } = formData;
     const dataToSave = {
-      ...formData,
+      ...rest,
       teamMembers,
       postToFeed
     };
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    saveProfileData(dataToSave);
     go('profile-step-3');
   };
 
   const handlePrevious = () => {
-    const dataToSave = { ...formData, teamMembers, postToFeed };
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    const { pitchDeck, ...rest } = formData;
+    const dataToSave = { ...rest, teamMembers, postToFeed };
+    saveProfileData(dataToSave);
     go('profile-step-1');
   };
 
@@ -84,8 +120,9 @@ function ProfileStep2BusinessDetails({ user, go }) {
   };
 
   const handleSaveDraft = () => {
-    const dataToSave = { ...formData, teamMembers, postToFeed };
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    const { pitchDeck, ...rest } = formData;
+    const dataToSave = { ...rest, teamMembers, postToFeed };
+    saveProfileData(dataToSave);
     alert('Draft saved successfully!');
   };
 
@@ -288,9 +325,9 @@ function ProfileStep2BusinessDetails({ user, go }) {
                 <p className="text-slate-500 text-xs mt-1">
                   PDF only (max. 10MB)
                 </p>
-                {formData.pitchDeck && (
+                {(formData.pitchDeck || formData.pitchDeckName) && (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-2">
-                    ✓ {formData.pitchDeck.name}
+                    ✓ {formData.pitchDeck?.name || formData.pitchDeckName}
                   </p>
                 )}
               </div>

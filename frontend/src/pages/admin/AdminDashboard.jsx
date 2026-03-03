@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminSidebar from '../../components/AdminSidebar.jsx';
+import UserSearchResults from '../../components/UserSearchResults.jsx';
 
 export default function AdminDashboard({ user, go }) {
   const name = user?.name || 'Admin';
@@ -23,6 +24,8 @@ export default function AdminDashboard({ user, go }) {
     chartPoints: []
   });
   const [systemActivities, setSystemActivities] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -417,16 +420,27 @@ export default function AdminDashboard({ user, go }) {
                   type="text" 
                   placeholder="Search startups, investors..." 
                   className="w-64 px-4 py-2 pl-10 bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50"
+                  value={searchQuery}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onBlur={() => setTimeout(() => setIsSearchOpen(false), 120)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearchOpen(true);
+                  }}
                 />
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xl">search</span>
+                <UserSearchResults
+                  query={searchQuery}
+                  isOpen={isSearchOpen}
+                  user={user}
+                  go={go}
+                  onSelect={() => {
+                    setSearchQuery('');
+                    setIsSearchOpen(false);
+                  }}
+                />
               </div>
-              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 relative">
-                <span className="material-symbols-outlined">notifications</span>
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-              </button>
-              <button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400">
-                <span className="material-symbols-outlined">mail</span>
-              </button>
+
               <button onClick={() => go('settings')} className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold">
                   {name.charAt(0)}

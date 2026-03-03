@@ -1,66 +1,124 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import client from '../api/client.js';
+
+function formatChatTime(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatListTime(value) {
+  if (!value) return 'Now';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Now';
+  const diffMins = Math.floor((Date.now() - date.getTime()) / 60000);
+  if (diffMins < 1) return 'Now';
+  if (diffMins < 60) return `${diffMins}m`;
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) return `${diffHours}h`;
+  return `${Math.floor(diffHours / 24)}d`;
+}
 
 export default function MessagesPage({ user, go }) {
-  const [activeId, setActiveId] = useState(1);
+  const [activeId, setActiveId] = useState(null);
   const [search, setSearch] = useState('');
   const [draft, setDraft] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [conversations, setConversations] = useState([]);
+  const [thread, setThread] = useState([]);
+  const [partnerFromNavigation, setPartnerFromNavigation] = useState(null);
 
-  const conversations = useMemo(
-    () => [
-      {
-        id: 1,
-        name: 'Sarah Chen',
-        role: 'Investor • Sequoia Capital',
-        last: 'The updated pitch deck looks impressive. Let\'s...',
-        time: 'Just now',
-        unread: true,
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCdKfj_71AG6YLvmQHgzYONz1slbr7sc19agZ543JHBs1Xc3xpte37M2FFl7fef6HbMt379FNvNvKAtMW9EqZwc_ocLoRvlHV5De8nvfFjo1zknvtDNQu7ZK1oSQqa7MxbJ9kA-Wniv7NYiQ4AT11PMQhI8Xv6nALHkToqq40lRPJc8w4ZAIKQjEzTbUZf2lbRbP6Z2waZY3mtnvWnwWuRU7TYktKqBwu8ucgksw4hd16uqe9istbQwGdtrWYCia9sr0TRD3GJ0lSQ'
-      },
-      {
-        id: 2,
-        name: 'David Miller',
-        role: 'Founder • CloudScale AI',
-        last: 'Thanks for the feedback on the Series A terms.',
-        time: '10:45 AM',
-        unread: false,
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuCAL-NRIwE4CLq6hHhvdYx5uZzcne7WDf6lZaX_1Idz_5GgIE1PJydUw9O1Us7UpRYO9U8hOCyMM-6PQWqezLfNWV7e-DflpekxMRhv8wI1MkFb3H68FybljeG1_YMpz4MUSS_5diOh21HtyIV31fqmWHsIqEu1cuSww3hzy8-7WFXjcCnvqRrg39Hfme2F69gXZabNUpNcoPoYq4AHbTd9JpwOoIf8TSUN3vn0E4awkcV5_R3A_mgAG7ZW1jf9oYmPUPUkZLvE69w'
-      },
-      {
-        id: 3,
-        name: 'Elena Rodriguez',
-        role: 'VC Partner • Techstars',
-        last: 'Can you share the NDA for the due diligence phase?',
-        time: 'Yesterday',
-        unread: false,
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuBPBk9X-JqgSE2lNAD9uMiW1peLJY4F-iWgfAsK7vaGjrOBC89Et3KIKczuLICVPHXBaThhW9cWshhLerOSiOPzY5E2FKhQT3nzLWH9t5sIHr13FZa6j1meR5lzLUIZnp1uT_z3CQsutsMLOYoAUEqUeD2tIF0hTFHAftEEqUIHsccWZ5n9ZKQ-lCkUIfUvxFlv-E8KKGsw3tVB67bq05OuQkrlLclptODqZ4Q7PVLFt9xhruDD-PRYxostIDUrnGIgcOk8JuUHvqE'
-      },
-      {
-        id: 4,
-        name: 'Marcus Thorne',
-        role: 'Angel Investor',
-        last: 'Sent a PDF document',
-        time: 'Yesterday',
-        unread: false,
-        avatar:
-          'https://lh3.googleusercontent.com/aida-public/AB6AXuDR9cC1o7-s_rtB-OqSCqrSeinlA9u4kl9hf7FUKp-pjgRHBu-ZamGYykot60STPdZyqvRY9_xTmgE7Ex56GsxopfaX9G6nHnXh6okWTi1WbVcTBD9tIWEAoEjQF9Kb9KdwN3vsRANyi4uL9doE3YillUZQ8BtngB7DUl15MkOQItsfZbRoHgDaH5gSdHtpXrcqFPgHYFatrehp9VC5AI-HYnzlqbwWMj0mrIgbIbHJTjBHqibevWW6UmZWvZLEp004B59hIKwo55c'
+  const loadConversations = async () => {
+    try {
+      const response = await client.get('/messages/conversations');
+      const list = Array.isArray(response.data) ? response.data : [];
+      setConversations(list);
+
+      const savedPartnerRaw = localStorage.getItem('messagePartner');
+      if (savedPartnerRaw) {
+        const parsed = JSON.parse(savedPartnerRaw);
+        if (parsed?.id) {
+          setPartnerFromNavigation(parsed);
+          setActiveId(String(parsed.id));
+          localStorage.removeItem('messagePartner');
+          return;
+        }
       }
-    ],
-    []
-  );
 
-  const filtered = conversations.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.role.toLowerCase().includes(search.toLowerCase())
-  );
+      if (!activeId && list.length) {
+        setActiveId(String(list[0].partnerId));
+      }
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const active = filtered.find((c) => c.id === activeId) || filtered[0];
+  useEffect(() => {
+    loadConversations();
+  }, []);
 
-  const handleSend = () => {
-    if (!draft.trim()) return;
-    setDraft('');
+  useEffect(() => {
+    if (!activeId) {
+      setThread([]);
+      return;
+    }
+
+    const loadThread = async () => {
+      try {
+        const response = await client.get(`/messages/${activeId}`);
+        setThread(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error('Error loading thread:', error);
+        setThread([]);
+      }
+    };
+
+    loadThread();
+  }, [activeId]);
+
+  const filtered = conversations.filter((c) => {
+    const name = String(c.partnerName || '').toLowerCase();
+    const role = String(c.partnerRole || '').toLowerCase();
+    const query = search.toLowerCase();
+    return name.includes(query) || role.includes(query);
+  });
+
+  const activeConversation = useMemo(() => {
+    const found = conversations.find((c) => String(c.partnerId) === String(activeId));
+    if (found) return found;
+    if (partnerFromNavigation && String(partnerFromNavigation.id) === String(activeId)) {
+      return {
+        partnerId: partnerFromNavigation.id,
+        partnerName: partnerFromNavigation.name,
+        partnerRole: partnerFromNavigation.role,
+        partnerSubtitle: partnerFromNavigation.subtitle,
+        lastMessage: '',
+        unreadCount: 0,
+        lastMessageAt: null
+      };
+    }
+    return null;
+  }, [activeId, conversations, partnerFromNavigation]);
+
+  const handleSend = async () => {
+    if (!activeId || !draft.trim() || sending) return;
+    try {
+      setSending(true);
+      const response = await client.post(`/messages/${activeId}`, { content: draft.trim() });
+      const newMessage = response.data;
+      setThread((prev) => [...prev, newMessage]);
+      setDraft('');
+      await loadConversations();
+    } catch (error) {
+      console.error('Error sending message:', error);
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -78,11 +136,8 @@ export default function MessagesPage({ user, go }) {
         }
       `}</style>
       <div className="flex h-screen w-full bg-[#f5f7f8] dark:bg-[#101b22] text-slate-900 dark:text-white">
-    {/* Main Content Area: Messaging Dual-Pane */}
     <main className="flex-1 flex flex-row overflow-hidden bg-[#f5f7f8] dark:bg-[#101b22]">
-      {/* Left Pane: Conversation List */}
       <aside className="w-full sm:w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex flex-col">
-        {/* Search & Header */}
         <div className="p-6 pb-2">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -95,9 +150,6 @@ export default function MessagesPage({ user, go }) {
               </button>
               <h1 className="text-2xl font-bold">Messages</h1>
             </div>
-            <button className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center hover:bg-primary/20 transition-all">
-              <span className="material-symbols-outlined">edit_square</span>
-            </button>
           </div>
           <div className="relative mb-4">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
@@ -111,60 +163,46 @@ export default function MessagesPage({ user, go }) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-            <button className="px-4 py-1.5 rounded-full bg-primary text-white text-xs font-semibold whitespace-nowrap">
-              All
-            </button>
-            <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold whitespace-nowrap hover:bg-slate-200 dark:hover:bg-slate-700">
-              Investors
-            </button>
-            <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold whitespace-nowrap hover:bg-slate-200 dark:hover:bg-slate-700">
-              Startups
-            </button>
-            <button className="px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold whitespace-nowrap hover:bg-slate-200 dark:hover:bg-slate-700">
-              Unread
-            </button>
-          </div>
         </div>
-        {/* Scrollable List */}
         <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1">
-          {filtered.map((chat) => (
+          {loading ? (
+            <div className="px-3 py-4 text-sm text-slate-500">Loading conversations...</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-3 py-4 text-sm text-slate-500">No conversations yet.</div>
+          ) : filtered.map((chat) => (
             <div
-              key={chat.id}
-              onClick={() => setActiveId(chat.id)}
+              key={chat.partnerId}
+              onClick={() => setActiveId(String(chat.partnerId))}
               className={`flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors group ${
-                chat.id === activeId
+                String(chat.partnerId) === String(activeId)
                   ? 'bg-primary/10 border border-primary/20'
                   : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'
               }`}
             >
               <div className="relative shrink-0">
                 <div
-                  className="size-12 rounded-xl bg-cover bg-center"
-                  data-alt={`Avatar of ${chat.name}`}
-                  style={{ backgroundImage: `url("${chat.avatar}")` }}
+                  className="size-12 rounded-xl bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]"
+                  data-alt={`Avatar of ${chat.partnerName}`}
                 />
-                {chat.id === activeId && (
+                {String(chat.partnerId) === String(activeId) && (
                   <div className="absolute -bottom-1 -right-1 size-3.5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-bold truncate">{chat.name}</h3>
-                  <span className={`text-[10px] font-medium ${chat.id === activeId ? 'text-primary' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>
-                    {chat.time}
+                  <h3 className="text-sm font-bold truncate">{chat.partnerName}</h3>
+                  <span className={`text-[10px] font-medium ${String(chat.partnerId) === String(activeId) ? 'text-primary' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300'}`}>
+                    {formatListTime(chat.lastMessageAt)}
                   </span>
                 </div>
-                <p className={`text-xs truncate ${chat.id === activeId ? 'text-slate-700 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
-                  {chat.last}
+                <p className={`text-xs truncate ${String(chat.partnerId) === String(activeId) ? 'text-slate-700 dark:text-slate-200 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
+                  {chat.lastMessage || 'Start chatting'}
                 </p>
               </div>
-              {chat.unread && chat.id === activeId && <div className="size-2 bg-primary rounded-full" />}
+              {Number(chat.unreadCount || 0) > 0 && <div className="size-2 bg-primary rounded-full" />}
             </div>
           ))}
         </div>
-        {/* Profile Bottom */}
         <div className="px-3 pb-4">
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer">
             <div
@@ -182,182 +220,46 @@ export default function MessagesPage({ user, go }) {
           </div>
         </div>
       </aside>
-      {/* Right Pane: Active Chat Window */}
       <section className="flex-1 flex flex-col bg-white dark:bg-[#101b22]">
-        {/* Chat Header */}
         <header className="h-20 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-[#111a22] flex items-center justify-between px-8 shrink-0">
           <div className="flex items-center gap-4">
             <div
-              className="size-10 rounded-xl bg-cover bg-center"
+              className="size-10 rounded-xl bg-gradient-to-br from-[#0d93f2] to-[#0ea5e9]"
               data-alt="Profile of active user"
-              style={{ backgroundImage: `url("${active?.avatar}")` }}
             />
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold">{active?.name}</h2>
+                <h2 className="text-base font-bold">{activeConversation?.partnerName || 'Select a conversation'}</h2>
                 <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
-                  {active?.role?.split('•')?.[0]?.trim() || 'Investor'}
+                  {activeConversation?.partnerRole || 'Member'}
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="size-2 bg-green-500 rounded-full" />
                 <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                  Active now
+                  Conversation
                 </span>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400"
-              title="Schedule Meeting"
-            >
-              <span className="material-symbols-outlined">calendar_month</span>
-            </button>
-            <button
-              className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400"
-              title="View Profile"
-            >
-              <span className="material-symbols-outlined">person</span>
-            </button>
-            <div className="w-[1px] h-6 bg-slate-200 dark:bg-slate-800 mx-1" />
-            <button className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500 dark:text-slate-400">
-              <span className="material-symbols-outlined">more_vert</span>
-            </button>
           </div>
         </header>
-        {/* Messages History */}
         <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
-          {/* Date Separator */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800" />
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-              Yesterday
-            </span>
-            <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800" />
-          </div>
-          {/* Received Message */}
-          <div className="flex items-end gap-3 max-w-[80%] lg:max-w-[60%]">
-            <div
-              className="size-8 rounded-lg bg-cover bg-center shrink-0 mb-1"
-              data-alt="Sarah Chen's avatar"
-              style={{
-                backgroundImage:
-                  'url("https://lh3.googleusercontent.com/aida-public/AB6AXuD-F_aL4AiDpW8VxTs4KpIetBlR2xsw4zbgIX_RMPpQAvvo2siF7D-goV6IbRecPyzFASKORWuhCfCISoDOTuByruDMEzFwfH6AgzkiAs0R-2ZYgBAhVMcAkF8D9l43VVx7ghY4AXtClEtSyjtL7uIXyW5X8VqZFY54YnFej0PW2C5bpPscTDATpq5m91ei8HGS4SbWcaIW7q0-VAZhjxRQBKNYRlemyVADPU_0gSGroVMswyOK1C2fKlHdFkXnorMYYCo6bbofbRo")'
-              }}
-            />
-            <div className="flex flex-col gap-1">
-              <div className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 px-5 py-3.5 rounded-2xl rounded-bl-none shadow-sm text-sm leading-relaxed">
-                Hi Alex, I've had a chance to review the initial financial
-                projections you sent over on Tuesday.
-              </div>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 px-1">11:20 AM</span>
-            </div>
-          </div>
-          {/* Sent Message */}
-          <div className="flex items-end gap-3 justify-end ml-auto max-w-[80%] lg:max-w-[60%]">
-            <div className="flex flex-col gap-1 items-end">
-              <div className="bg-primary text-white px-5 py-3.5 rounded-2xl rounded-br-none shadow-lg shadow-primary/20 text-sm leading-relaxed">
-                Glad to hear that! We tried to be as conservative as possible
-                with the CAC estimates for Year 1.
-              </div>
-              <div className="flex items-center gap-1 px-1">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">11:24 AM</span>
-                <span className="material-symbols-outlined text-[14px] text-primary">
-                  done_all
-                </span>
-              </div>
-            </div>
-          </div>
-          {/* Received Message with File */}
-          <div className="flex items-end gap-3 max-w-[80%] lg:max-w-[60%]">
-            <div
-              className="size-8 rounded-lg bg-cover bg-center shrink-0 mb-1"
-              data-alt="Sarah Chen's avatar"
-              style={{
-                backgroundImage:
-                  'url("https://lh3.googleusercontent.com/aida-public/AB6AXuB5_59wfqdWmGaqnjFRparKQAH2zsqxFcedkyMIw1Hh1mhsQKrohFTjI2IkxIxCcKL2krq3ilC2rjGB1G8MFJkryxYPC_IyUyOlXckKiQZFrCsi48X5Bx7XmBKcPZo_uqRXRvoc9DhK08NvvAur3ZXV5dGmi_s0lf3KJl9WOHrykFN-33NqTzZrkpV39oGqcRGAgQ8REzlef-lI5No8sMOlj7YwDH-RxALgfbtrTJiVE1S96p9JVJdpoCayMdbmN5SJXVhGePYeihg")'
-              }}
-            />
-            <div className="flex flex-col gap-2">
-              <div className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 px-5 py-3.5 rounded-2xl rounded-bl-none shadow-sm text-sm leading-relaxed">
-                Understood. Could you please share the updated deck with the new
-                roadmap slides? My partners would like to see the Q3 expansion
-                plan.
-              </div>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 px-1">11:26 AM</span>
-            </div>
-          </div>
-          {/* Date Separator */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800" />
-            <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
-              Today
-            </span>
-            <div className="flex-1 h-[1px] bg-slate-200 dark:bg-slate-800" />
-          </div>
-          {/* Sent Message with Attachment */}
-          <div className="flex items-end gap-3 justify-end ml-auto max-w-[80%] lg:max-w-[60%]">
-            <div className="flex flex-col gap-3 items-end w-full">
-              <div className="bg-primary text-white px-5 py-3.5 rounded-2xl rounded-br-none shadow-lg shadow-primary/20 text-sm leading-relaxed">
-                Absolutely. Here is the revised deck with the detailed roadmap
-                on slide 14.
-              </div>
-              {/* Attachment Card */}
-              <div className="w-full max-w-sm bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="size-10 bg-red-100 dark:bg-red-500/10 text-red-600 rounded-lg flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined">
-                      picture_as_pdf
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">
-                      TechVision_Pitch_v2.4.pdf
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      4.2 MB • Updated today
-                    </p>
-                  </div>
+          {!activeId ? (
+            <div className="text-sm text-slate-500">Select a conversation to start messaging.</div>
+          ) : thread.length === 0 ? (
+            <div className="text-sm text-slate-500">No messages yet. Send the first message.</div>
+          ) : thread.map((message) => {
+            const mine = String(message.senderId) === String(user?.id);
+            return (
+              <div key={message._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[70%] px-4 py-3 rounded-2xl text-sm ${mine ? 'bg-primary text-white rounded-br-none' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-100 rounded-bl-none'}`}>
+                  <p>{message.content}</p>
+                  <p className={`mt-1 text-[10px] ${mine ? 'text-white/80' : 'text-slate-400'}`}>{formatChatTime(message.createdAt)}</p>
                 </div>
-                <button className="size-8 rounded-lg bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors">
-                  <span className="material-symbols-outlined text-[20px]">
-                    download
-                  </span>
-                </button>
               </div>
-              <div className="flex items-center gap-1 px-1">
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">9:41 AM</span>
-                <span className="material-symbols-outlined text-[14px] text-primary">
-                  done_all
-                </span>
-              </div>
-            </div>
-          </div>
-          {/* Typing Indicator */}
-          <div className="flex items-center gap-3">
-            <div
-              className="size-8 rounded-lg bg-cover bg-center shrink-0"
-              data-alt="Sarah Chen's avatar"
-              style={{
-                backgroundImage:
-                  'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZRAf0s-uT7hJ979O8LHcsLL3YzoTMVQSgHNeLRsTrgYrtJXvjQ3gQI3TXDOvBb9Ik4bbf4kuvSjKPEHmF2SHepWOMjDMANiq5PUeMTGWRHTwG-kvRl-XFpJuhCPogYlh22AdkNtu8GWBi_JUEegunAQo1Llf1qUPGOYaaP2JEU-41JD-Vn8b6knOyISl8zGIaBxkkRua4TiOr3s8xv_rVIqUMC1K1q9j3jUZly_uh0Ui20T1n1YCKkSMXSLOTPUx4SbzDjcMP_cg")'
-              }}
-            />
-            <div className="bg-slate-100 dark:bg-slate-800 px-4 py-3 rounded-2xl shadow-sm flex gap-1">
-              <span className="size-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce" />
-              <span
-                className="size-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"
-                style={{ animationDelay: "0.2s" }}
-              />
-              <span
-                className="size-1.5 bg-slate-400 dark:bg-slate-500 rounded-full animate-bounce"
-                style={{ animationDelay: "0.4s" }}
-              />
-            </div>
-          </div>
+            );
+          })}
         </div>
-        {/* Input Area */}
         <footer className="p-6 bg-white dark:bg-[#111a22] border-t border-slate-200 dark:border-slate-800">
           <div className="max-w-4xl mx-auto flex items-end gap-3">
             <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-end p-2 px-3 border border-slate-200 dark:border-slate-700 focus-within:border-primary/50 focus-within:ring-2 focus-within:ring-primary/10 transition-all">
@@ -370,6 +272,12 @@ export default function MessagesPage({ user, go }) {
                 rows={1}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
               />
               <button className="p-2.5 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                 <span className="material-symbols-outlined">mood</span>
@@ -377,7 +285,8 @@ export default function MessagesPage({ user, go }) {
             </div>
             <button
               onClick={handleSend}
-              className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all"
+              disabled={!activeId || sending || !draft.trim()}
+              className="size-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/25 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span
                 className="material-symbols-outlined"
@@ -387,9 +296,6 @@ export default function MessagesPage({ user, go }) {
               </span>
             </button>
           </div>
-          <p className="text-[10px] text-center text-slate-500 dark:text-slate-400 mt-4 font-medium uppercase tracking-widest">
-            Shift + Enter to add a new line
-          </p>
         </footer>
       </section>
     </main>

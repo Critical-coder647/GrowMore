@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import client from '../api/client.js';
 
-function Settings({ user, go, logout }) {
+function Settings({ user, go, logout, onUserUpdated }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [theme, setTheme] = useState(() => {
@@ -22,6 +22,35 @@ function Settings({ user, go, logout }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const response = await client.get('/auth/me');
+        const me = response.data || {};
+        const nameParts = String(me.name || '').trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        setProfileData((prev) => ({
+          ...prev,
+          firstName,
+          lastName,
+          headline: me.headline || '',
+          bio: me.bio || me.description || me.thesis || '',
+          email: me.email || '',
+          phone: me.phone || '',
+          linkedin: me.linkedin || '',
+          twitter: me.twitter || '',
+          website: me.website || ''
+        }));
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
     // Apply theme on mount and when it changes
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -39,14 +68,26 @@ function Settings({ user, go, logout }) {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://localhost:5000/api/auth/profile', profileData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await client.put('/auth/profile', profileData);
+
+      const updated = response?.data?.user;
+      if (updated) {
+        const existingUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const mergedUser = {
+          ...existingUser,
+          id: updated._id || existingUser.id,
+          name: updated.name || existingUser.name,
+          email: updated.email || existingUser.email,
+          role: updated.role || existingUser.role
+        };
+        localStorage.setItem('user', JSON.stringify(mergedUser));
+        if (onUserUpdated) onUserUpdated(mergedUser);
+      }
+
       alert('Profile updated successfully!');
     } catch (error) {
       console.error('Error updating profile:', error);
-      alert('Failed to update profile');
+      alert(error?.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { setProfileSetupFile } from '../../utils/profileSetupFiles.js';
 
 function ProfileStep1BasicDetails({ user, go }) {
   const [formData, setFormData] = useState({
@@ -12,12 +13,26 @@ function ProfileStep1BasicDetails({ user, go }) {
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [error, setError] = useState('');
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  const getSavedProfileData = () => {
+    try {
+      const saved = localStorage.getItem('profileSetupData');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveProfileData = (updates) => {
+    const existing = getSavedProfileData();
+    localStorage.setItem('profileSetupData', JSON.stringify({ ...existing, ...updates }));
+  };
 
   useEffect(() => {
     // Load saved data
-    const saved = localStorage.getItem('profileSetupData');
-    if (saved) {
-      const data = JSON.parse(saved);
+    const data = getSavedProfileData();
+    if (Object.keys(data).length > 0) {
       setFormData(prev => ({
         ...prev,
         companyName: data.companyName || '',
@@ -31,7 +46,14 @@ function ProfileStep1BasicDetails({ user, go }) {
         setLogoPreview(data.logoPreview);
       }
     }
+    setHasHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    const { logo, ...rest } = formData;
+    saveProfileData({ ...rest, logoPreview });
+  }, [formData, logoPreview, hasHydrated]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,6 +65,7 @@ function ProfileStep1BasicDetails({ user, go }) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setFormData(prev => ({ ...prev, logo: file }));
+      setProfileSetupFile('logo', file);
       
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -59,11 +82,12 @@ function ProfileStep1BasicDetails({ user, go }) {
     }
 
     // Save data
+    const { logo, ...rest } = formData;
     const dataToSave = {
-      ...formData,
-      logoPreview: logoPreview
+      ...rest,
+      logoPreview
     };
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    saveProfileData(dataToSave);
     go('profile-step-2');
   };
 
@@ -72,8 +96,9 @@ function ProfileStep1BasicDetails({ user, go }) {
   };
 
   const handleSaveDraft = () => {
-    const dataToSave = { ...formData, logoPreview };
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    const { logo, ...rest } = formData;
+    const dataToSave = { ...rest, logoPreview };
+    saveProfileData(dataToSave);
     alert('Draft saved successfully!');
   };
 

@@ -1,4 +1,6 @@
 import React, { useMemo, useState } from 'react';
+import { useEffect } from 'react';
+import axios from 'axios';
 import StartupSidebar from '../../components/StartupSidebar.jsx';
 
 export default function FundingRequests({ user, go }) {
@@ -12,14 +14,99 @@ export default function FundingRequests({ user, go }) {
     shareToFeed: false
   });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState('pending');
+  const [verificationNote, setVerificationNote] = useState('');
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [isReapplying, setIsReapplying] = useState(false);
+
+  const getIncompleteProfileStep = () => {
+    const saved = localStorage.getItem('profileSetupData');
+    if (!saved) return 'profile-step-1';
+    try {
+      const data = JSON.parse(saved);
+      if (!data.companyName || !data.industry) return 'profile-step-1';
+      if (!data.problemStatement || !data.solution) return 'profile-step-2';
+      if (!data.fundingGoal || !data.fundingPurpose) return 'profile-step-3';
+      return null;
+    } catch {
+      return 'profile-step-1';
+    }
+  };
+
+  const resumeStep = getIncompleteProfileStep();
+  const isProfileComplete = verificationStatus === 'approved' ? true : !resumeStep;
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setVerificationStatus(String(response.data?.verificationStatus || 'pending').toLowerCase());
+        setVerificationNote(response.data?.verificationNote || '');
+      } catch (error) {
+        console.error('Error fetching verification status:', error);
+        setVerificationStatus('pending');
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+
+    fetchStatus();
+  }, []);
+
+  const handleReapplyVerification = async () => {
+    try {
+      setIsReapplying(true);
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:5000/api/startups/reapply-verification',
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setVerificationStatus('pending');
+      setVerificationNote('');
+    } catch (error) {
+      console.error('Error reapplying verification:', error);
+      alert(error?.response?.data?.message || 'Failed to reapply for verification');
+    } finally {
+      setIsReapplying(false);
+    }
+  };
 
   const handleChange = (field) => (event) => {
     const value = event.target.type === 'checkbox' ? event.target.checked : event.target.value;
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:5000/api/startups/funding-request',
+        {
+          targetAmount: form.targetAmount,
+          minTicket: form.minTicket,
+          stage: form.stage,
+          valuation: form.valuation,
+          elevatorPitch: form.elevatorPitch,
+          summary: form.summary,
+          shareToFeed: form.shareToFeed
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Funding proposal created successfully!');
+      go('startup-dashboard');
+    } catch (error) {
+      console.error('Error creating funding proposal:', error);
+      alert(error?.response?.data?.message || 'Failed to create funding proposal');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleRequestCancel = () => {
@@ -43,6 +130,78 @@ export default function FundingRequests({ user, go }) {
     const progress = Math.round((filled / 6) * 100);
     return `${progress}% Complete`;
   }, [form]);
+
+  if (checkingStatus) {
+    return (
+      <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-900 flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <StartupSidebar user={user} go={go} activeView="startup-funding" />
+        <main className="flex-1 grid place-items-center">Checking verification status...</main>
+      </div>
+    );
+  }
+
+  if (!isProfileComplete || verificationStatus !== 'approved') {
+    return (
+      <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-900 flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
+        <StartupSidebar user={user} go={go} activeView="startup-funding" />
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-6 py-12">
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              {!isProfileComplete ? (
+                <>
+                  <h1 className="text-2xl font-bold text-slate-900">Complete your profile first</h1>
+                  <p className="mt-2 text-sm text-slate-600">
+                    You cannot create a funding proposal until profile setup is complete.
+                  </p>
+                  <button
+                    onClick={() => go(resumeStep || 'profile-step-1')}
+                    className="mt-5 h-10 px-5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600"
+                  >
+                    Resume Profile Setup
+                  </button>
+                </>
+              ) : verificationStatus === 'pending' ? (
+                <>
+                  <h1 className="text-2xl font-bold text-slate-900">Profile pending admin verification</h1>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Your profile setup is complete and waiting for admin approval. Funding proposals unlock after approval.
+                  </p>
+                  <button
+                    onClick={() => go('startup-dashboard')}
+                    className="mt-5 h-10 px-5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600"
+                  >
+                    Back to Dashboard
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-bold text-slate-900">Profile verification rejected</h1>
+                  <p className="mt-2 text-sm text-slate-600">
+                    {verificationNote || 'Your profile was rejected by admin. You can reapply for verification.'}
+                  </p>
+                  <div className="mt-5 flex items-center gap-3">
+                    <button
+                      onClick={handleReapplyVerification}
+                      disabled={isReapplying}
+                      className="h-10 px-5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-60"
+                    >
+                      {isReapplying ? 'Submitting...' : 'Reapply for Verification'}
+                    </button>
+                    <button
+                      onClick={() => go('startup-dashboard')}
+                      className="h-10 px-5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Back to Dashboard
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-full bg-[#f6f8fb] text-slate-900 flex" style={{ fontFamily: 'Manrope, sans-serif' }}>
@@ -221,9 +380,10 @@ export default function FundingRequests({ user, go }) {
                 </button>
                 <button
                   type="submit"
-                  className="h-10 px-5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600"
+                  disabled={submitting}
+                  className="h-10 px-5 rounded-xl bg-blue-500 text-white text-sm font-semibold hover:bg-blue-600 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Next Step →
+                  {submitting ? 'Submitting...' : 'Create Funding Proposal'}
                 </button>
               </div>
             </form>

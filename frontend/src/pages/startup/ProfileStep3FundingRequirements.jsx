@@ -11,12 +11,26 @@ function ProfileStep3FundingRequirements({ user, go }) {
   });
 
   const [error, setError] = useState('');
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  const getSavedProfileData = () => {
+    try {
+      const saved = localStorage.getItem('profileSetupData');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const saveProfileData = (updates) => {
+    const existing = getSavedProfileData();
+    localStorage.setItem('profileSetupData', JSON.stringify({ ...existing, ...updates }));
+  };
 
   useEffect(() => {
     // Load saved data from previous steps
-    const saved = localStorage.getItem('profileSetupData');
-    if (saved) {
-      const data = JSON.parse(saved);
+    const data = getSavedProfileData();
+    if (Object.keys(data).length > 0) {
       setFormData(prev => ({
         ...prev,
         fundingGoal: data.fundingGoal || '',
@@ -27,7 +41,13 @@ function ProfileStep3FundingRequirements({ user, go }) {
         traction: data.traction || ''
       }));
     }
+    setHasHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hasHydrated) return;
+    saveProfileData(formData);
+  }, [formData, hasHydrated]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,14 +62,12 @@ function ProfileStep3FundingRequirements({ user, go }) {
     }
 
     // Save data
-    const dataToSave = formData;
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    saveProfileData(formData);
     go('profile-step-4');
   };
 
   const handlePrevious = () => {
-    const dataToSave = formData;
-    localStorage.setItem('profileSetupData', JSON.stringify(dataToSave));
+    saveProfileData(formData);
     go('profile-step-2');
   };
 
@@ -58,7 +76,7 @@ function ProfileStep3FundingRequirements({ user, go }) {
   };
 
   const handleSaveDraft = () => {
-    localStorage.setItem('profileSetupData', JSON.stringify(formData));
+    saveProfileData(formData);
     alert('Draft saved successfully!');
   };
 

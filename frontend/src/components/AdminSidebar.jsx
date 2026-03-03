@@ -34,9 +34,12 @@ export default function AdminSidebar({ go, activeView = 'admin-dashboard' }) {
           <span className={`text-sm ${isActive('admin-users') ? 'font-semibold' : 'font-medium'}`}>User Management</span>
         </button>
 
-        <button className={`${baseItemClass} hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-400`}>
+        <button
+          onClick={() => go('admin-funding-rounds')}
+          className={`${baseItemClass} ${isActive('admin-funding-rounds') ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : 'hover:bg-slate-100 text-slate-600 dark:hover:bg-slate-800 dark:text-slate-400'}`}
+        >
           <span className="material-symbols-outlined text-xl">trending_up</span>
-          <span className="text-sm font-medium">Funding Rounds</span>
+          <span className={`text-sm ${isActive('admin-funding-rounds') ? 'font-semibold' : 'font-medium'}`}>Funding Rounds</span>
         </button>
 
         <button

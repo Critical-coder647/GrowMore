@@ -3,6 +3,7 @@ import { auth } from '../middleware/auth.js';
 import { StartupUser } from '../models/StartupUser.js';
 import { InvestorUser } from '../models/InvestorUser.js';
 import { User } from '../models/User.js';
+import { Notification } from '../models/Notification.js';
 
 const router = express.Router();
 
@@ -45,6 +46,21 @@ router.get('/profiles', auth(['admin']), async (req, res) => {
   }
 });
 
+router.get('/profiles/:userType/:id', auth(['admin']), async (req, res) => {
+  try {
+    const { userType, id } = req.params;
+    const Model = resolveProfileModel(userType);
+    if (!Model) return res.status(400).json({ message: 'Invalid user type' });
+
+    const user = await Model.findById(id).select('-password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 router.patch('/profiles/:userType/:id/review', auth(['admin']), async (req, res) => {
   try {
     const { userType, id } = req.params;
@@ -65,6 +81,37 @@ router.patch('/profiles/:userType/:id/review', auth(['admin']), async (req, res)
     user.verificationReviewedBy = req.user.id;
     user.verificationNote = note || '';
     await user.save();
+
+    const recipientType = (userType === 'StartupUser' || userType === 'startup') ? 'StartupUser' : 'InvestorUser';
+    const statusTitleMap = {
+      approved: 'Profile Verification Approved',
+      rejected: 'Profile Verification Rejected',
+      pending: 'Profile Verification Updated'
+    };
+    const statusMessageMap = {
+      approved: 'Your profile has been approved by admin. You can now access all startup features.',
+      rejected: note
+        ? `Your profile was rejected. Reason: ${note}`
+        : 'Your profile was rejected by admin. Please update details and reapply for verification.',
+      pending: note
+        ? `Verification status set to pending. Note: ${note}`
+        : 'Your profile verification status is pending review.'
+    };
+
+    await Notification.create({
+      recipientId: user._id,
+      recipientType,
+      senderType: 'System',
+      senderName: 'Admin Team',
+      type: 'system',
+      title: statusTitleMap[status] || 'Verification Update',
+      message: statusMessageMap[status] || 'Your verification status has been updated.',
+      link: '/settings',
+      metadata: {
+        verificationStatus: status,
+        reviewNote: note || ''
+      }
+    });
 
     res.json({
       id: user._id,

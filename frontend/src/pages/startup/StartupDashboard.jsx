@@ -47,6 +47,9 @@ function StartupDashboard({ user, go }) {
   const [notificationCount, setNotificationCount] = useState(0);
   const [showProfileIncompleteAlert, setShowProfileIncompleteAlert] = useState(false);
   const [resumeStep, setResumeStep] = useState(null);
+  const [verificationStatus, setVerificationStatus] = useState('pending');
+  const [verificationNote, setVerificationNote] = useState('');
+  const [isReapplying, setIsReapplying] = useState(false);
   
   useEffect(() => {
     // Check if profile setup is incomplete
@@ -55,6 +58,8 @@ function StartupDashboard({ user, go }) {
       setShowProfileIncompleteAlert(true);
       setResumeStep(incompleteStep);
     }
+
+    fetchVerificationStatus();
     
     // Mock data - in production, fetch from API
     setApplications([
@@ -93,6 +98,55 @@ function StartupDashboard({ user, go }) {
     const interval = setInterval(fetchNotificationCount, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchVerificationStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const status = String(response.data?.verificationStatus || 'pending').toLowerCase();
+      setVerificationStatus(status);
+      setVerificationNote(response.data?.verificationNote || '');
+    } catch (error) {
+      console.error('Error fetching verification status:', error);
+      setVerificationStatus('pending');
+    }
+  };
+
+  const isProfileComplete = verificationStatus === 'approved' ? true : !resumeStep;
+  const canCreateFundingProposal = isProfileComplete && verificationStatus === 'approved';
+
+  const handleNewFundingRequest = () => {
+    if (!isProfileComplete && resumeStep) {
+      setShowProfileIncompleteAlert(true);
+      return;
+    }
+    if (verificationStatus !== 'approved') {
+      return;
+    }
+    go('startup-funding');
+  };
+
+  const handleReapplyVerification = async () => {
+    try {
+      setIsReapplying(true);
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'http://localhost:5000/api/startups/reapply-verification',
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setVerificationStatus('pending');
+      setVerificationNote('');
+      alert('Reapplication submitted. Your profile is now pending verification.');
+    } catch (error) {
+      console.error('Error reapplying verification:', error);
+      alert(error?.response?.data?.message || 'Failed to reapply for verification');
+    } finally {
+      setIsReapplying(false);
+    }
+  };
 
   const fetchNotificationCount = async () => {
     try {
@@ -134,7 +188,11 @@ function StartupDashboard({ user, go }) {
                     <span className="material-symbols-outlined text-[20px]">add_box</span>
                     New Post
                   </button>
-                  <button onClick={() => go('startup-funding')} className="flex items-center gap-2 rounded-lg bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#0d93f2]/90">
+                  <button
+                    onClick={handleNewFundingRequest}
+                    disabled={!canCreateFundingProposal}
+                    className="flex items-center gap-2 rounded-lg bg-[#0d93f2] px-4 py-2.5 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#0d93f2]/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
                     <span className="material-symbols-outlined text-[20px]">request_quote</span>
                     New Funding Request
                   </button>
@@ -142,7 +200,7 @@ function StartupDashboard({ user, go }) {
               </div>
               
               {/* Incomplete Profile Alert */}
-              {showProfileIncompleteAlert && resumeStep && (
+              {showProfileIncompleteAlert && resumeStep && verificationStatus !== 'approved' && (
                 <div className="flex items-start gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800/50 dark:bg-amber-900/20">
                   <span className="material-symbols-outlined text-amber-600 dark:text-amber-500 mt-0.5">
                     warning
@@ -176,6 +234,37 @@ function StartupDashboard({ user, go }) {
                   >
                     <span className="material-symbols-outlined text-[20px]">close</span>
                   </button>
+                </div>
+              )}
+
+              {isProfileComplete && verificationStatus === 'pending' && (
+                <div className="flex items-start gap-4 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-800/50 dark:bg-blue-900/20">
+                  <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 mt-0.5">hourglass_top</span>
+                  <div className="flex-1">
+                    <h3 className="text-base font-bold text-blue-900 dark:text-blue-200 mb-1">Profile Pending Verification</h3>
+                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                      Your profile setup is complete and currently under admin review. You can create funding proposals after approval.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isProfileComplete && verificationStatus === 'rejected' && (
+                <div className="flex items-start gap-4 rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800/50 dark:bg-red-900/20">
+                  <span className="material-symbols-outlined text-red-600 dark:text-red-400 mt-0.5">gpp_bad</span>
+                  <div className="flex-1">
+                    <h3 className="text-base font-bold text-red-900 dark:text-red-200 mb-1">Profile Verification Rejected</h3>
+                    <p className="text-sm text-red-800 dark:text-red-300 mb-3">
+                      {verificationNote || 'Admin rejected your profile. Update your details and reapply for verification.'}
+                    </p>
+                    <button
+                      onClick={handleReapplyVerification}
+                      disabled={isReapplying}
+                      className="rounded-lg bg-red-600 hover:bg-red-700 px-4 py-2 text-sm font-bold text-white transition-colors disabled:opacity-60"
+                    >
+                      {isReapplying ? 'Submitting...' : 'Reapply for Verification'}
+                    </button>
+                  </div>
                 </div>
               )}
 

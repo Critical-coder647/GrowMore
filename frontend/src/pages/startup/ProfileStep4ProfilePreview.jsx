@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { getProfileSetupFile } from '../../utils/profileSetupFiles.js';
 
 function ProfileStep4ProfilePreview({ user, go }) {
   const [profileData, setProfileData] = useState({});
   const [logoPreview, setLogoPreview] = useState('');
   const [showBanner, setShowBanner] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     // Load saved data from all previous steps
@@ -11,16 +14,9 @@ function ProfileStep4ProfilePreview({ user, go }) {
     if (saved) {
       const data = JSON.parse(saved);
       setProfileData(data);
-      
-      // Load logo preview if exists
-      if (data.logo) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setLogoPreview(reader.result);
-        };
-        if (data.logo instanceof File) {
-          reader.readAsDataURL(data.logo);
-        }
+
+      if (data.logoPreview) {
+        setLogoPreview(data.logoPreview);
       }
     }
   }, []);
@@ -29,8 +25,62 @@ function ProfileStep4ProfilePreview({ user, go }) {
     go('profile-step-3');
   };
 
-  const handleSubmit = () => {
-    go('profile-step-5');
+  const handleSubmit = async () => {
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token');
+      const payload = new FormData();
+
+      payload.append('name', profileData.companyName || user?.name || 'Startup');
+      payload.append('companyName', profileData.companyName || '');
+      payload.append('founders', user?.name || '');
+      payload.append('industry', profileData.industry || '');
+      payload.append('stage', profileData.fundingStage || '');
+      payload.append('fundingGoal', profileData.fundingGoal || '0');
+      payload.append('fundingRequirementMin', profileData.minInvestment || profileData.fundingGoal || '0');
+      payload.append('fundingRequirementMax', profileData.maxInvestment || profileData.fundingGoal || '0');
+      payload.append('traction', profileData.traction || '');
+      payload.append('description', profileData.description || '');
+      payload.append('problemStatement', profileData.problemStatement || '');
+      payload.append('solution', profileData.solution || '');
+      payload.append('website', profileData.website || '');
+      payload.append('location', profileData.location || '');
+      payload.append('fundingPurpose', profileData.fundingPurpose || '');
+      payload.append('usageBreakdown', profileData.usageBreakdown || '');
+      payload.append('tam', profileData.tam || '');
+      payload.append('sam', profileData.sam || '');
+      payload.append('som', profileData.som || '');
+
+      const keywordParts = [profileData.industry, profileData.fundingPurpose, profileData.elevatorPitch]
+        .filter(Boolean)
+        .join(',');
+      payload.append('keywords', keywordParts);
+
+      const logoFile = getProfileSetupFile('logo');
+      const pitchDeckFile = getProfileSetupFile('pitchDeck');
+
+      if (logoFile) {
+        payload.append('logo', logoFile);
+      }
+      if (pitchDeckFile) {
+        payload.append('pitchDeck', pitchDeckFile);
+      }
+
+      await axios.post('http://localhost:5000/api/startups', payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      localStorage.setItem('startupProfileSubmitted', 'true');
+      go('profile-step-5');
+    } catch (error) {
+      console.error('Error submitting startup profile:', error);
+      alert(error?.response?.data?.message || 'Failed to submit profile. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleEdit = (step) => {
@@ -130,9 +180,10 @@ function ProfileStep4ProfilePreview({ user, go }) {
             </button>
             <button 
               onClick={handleSubmit}
-              className="flex items-center justify-center h-10 px-6 rounded-xl bg-primary text-white text-sm font-bold hover:bg-blue-600 transition-colors shadow-md shadow-blue-200 dark:shadow-none"
+              disabled={submitting}
+              className="flex items-center justify-center h-10 px-6 rounded-xl bg-primary text-white text-sm font-bold hover:bg-blue-600 transition-colors shadow-md shadow-blue-200 dark:shadow-none disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Submit Profile
+              {submitting ? 'Submitting...' : 'Submit Profile'}
               <span className="material-symbols-outlined ml-2 text-base">send</span>
             </button>
           </div>

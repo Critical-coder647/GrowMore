@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import InvestorSidebar from '../../components/InvestorSidebar.jsx';
+import UserSearchResults from '../../components/UserSearchResults.jsx';
 
 function InvestorDashboard({ go }) {
   const [user, setUser] = useState(null);
   const [deals, setDeals] = useState([]);
+  const [suggestedStartups, setSuggestedStartups] = useState([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
   const [notificationCount, setNotificationCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [stats, setStats] = useState({
     totalInvested: '$4.2M',
     activeDeals: 12,
@@ -57,10 +62,60 @@ function InvestorDashboard({ go }) {
     
     // Fetch notification count
     fetchNotificationCount();
+    fetchSuggestedStartups();
     // Poll for notification updates every 30 seconds
     const interval = setInterval(fetchNotificationCount, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const fetchSuggestedStartups = async () => {
+    try {
+      setSuggestionsLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/startups/discover', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const items = Array.isArray(response.data) ? response.data : [];
+      const mapped = items
+        .map((startup) => ({
+          id: startup._id,
+          ownerId: startup.owner,
+          name: startup.name || 'Startup',
+          stage: startup.fundingProposal?.stage || startup.stage || 'Early Stage',
+          description: startup.fundingProposal?.summary || startup.description || 'No description yet',
+          minCheck: Number(startup.fundingProposal?.minTicket || startup.fundingRequirementMin || 0),
+          targetAmount: Number(startup.fundingProposal?.targetAmount || startup.fundingRequirementMax || 0),
+          valuation: startup.fundingProposal?.valuation || 'N/A',
+          traction: startup.traction || 'N/A',
+          tags: Array.isArray(startup.industry) ? startup.industry.slice(0, 3) : [],
+          logoPath: startup.logoPath || '',
+          pitchDeckPath: startup.pitchDeckPath || ''
+        }))
+        .sort((a, b) => (b.targetAmount > 0 ? 1 : 0) - (a.targetAmount > 0 ? 1 : 0))
+        .slice(0, 3);
+
+      setSuggestedStartups(mapped);
+    } catch (error) {
+      console.error('Error fetching suggested startups:', error);
+      setSuggestedStartups([]);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  };
+
+  const openPublicProfile = (startup) => {
+    const profileId = startup.ownerId || startup.id;
+    localStorage.setItem('publicProfileUserId', String(profileId));
+    go('public-profile');
+  };
+
+  const openPitchDeck = (startup) => {
+    if (!startup?.pitchDeckPath) return;
+    const url = startup.pitchDeckPath.startsWith('http')
+      ? startup.pitchDeckPath
+      : `http://localhost:5000${startup.pitchDeckPath}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   const fetchNotificationCount = async () => {
     try {
@@ -89,17 +144,6 @@ function InvestorDashboard({ go }) {
               <p className="text-slate-500 dark:text-slate-400 text-sm">
                 Here's what's happening with your portfolio today.
               </p>
-            </div>
-            <div className="flex gap-3">
-              <button className="size-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700">
-                <span className="material-symbols-outlined">search</span>
-              </button>
-              <button className="size-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 relative">
-                <span className="material-symbols-outlined">notifications</span>
-                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 border-2 border-white dark:border-slate-800 text-[10px] font-bold text-white">
-                  3
-                </span>
-              </button>
             </div>
           </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-2">
@@ -192,6 +236,23 @@ function InvestorDashboard({ go }) {
             <input
               className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl h-12 pl-12 pr-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50"
               placeholder="Search startups, founders, or updates..."
+              value={searchQuery}
+              onFocus={() => setIsSearchOpen(true)}
+              onBlur={() => setTimeout(() => setIsSearchOpen(false), 120)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+              }}
+            />
+            <UserSearchResults
+              query={searchQuery}
+              isOpen={isSearchOpen}
+              user={user}
+              go={go}
+              onSelect={() => {
+                setSearchQuery('');
+                setIsSearchOpen(false);
+              }}
             />
           </div>
           <div className="flex gap-2">
@@ -229,6 +290,52 @@ function InvestorDashboard({ go }) {
       </div>
       <div className="px-6 pb-6 flex flex-col xl:flex-row gap-6">
         <div className="flex-1 flex flex-col gap-6">
+          <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Suggested Startups</h3>
+              <button onClick={() => go('investor-connect')} className="text-sm font-bold text-[#0d93f2] hover:text-blue-600">View All</button>
+            </div>
+            {suggestionsLoading ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">Loading suggestions...</p>
+            ) : suggestedStartups.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">No startup suggestions available right now.</p>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {suggestedStartups.map((startup) => (
+                  <div key={startup.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="size-10 rounded-lg bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                        {startup.logoPath && (
+                          <img
+                            src={startup.logoPath.startsWith('http') ? startup.logoPath : `http://localhost:5000${startup.logoPath}`}
+                            alt={startup.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div>
+                        <button onClick={() => openPublicProfile(startup)} className="text-sm font-bold text-slate-900 dark:text-white hover:text-[#0d93f2]">
+                          {startup.name}
+                        </button>
+                        <p className="text-xs text-slate-500">{startup.stage}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-3">{startup.description}</p>
+                    <div className="text-xs text-slate-600 dark:text-slate-300 space-y-1 mb-3">
+                      <p>Target: <span className="font-bold">${startup.targetAmount.toLocaleString()}</span></p>
+                      <p>Min Check: <span className="font-bold">${startup.minCheck.toLocaleString()}</span></p>
+                      <p>Valuation: <span className="font-bold">{startup.valuation}</span></p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => openPublicProfile(startup)} className="flex-1 h-8 rounded-lg bg-[#0d93f2] text-white text-xs font-bold hover:bg-blue-600">Profile</button>
+                      <button onClick={() => openPitchDeck(startup)} disabled={!startup.pitchDeckPath} className="flex-1 h-8 rounded-lg border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 disabled:opacity-50">Deck</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start mb-4">
             <div className="flex gap-4">

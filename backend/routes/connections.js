@@ -8,15 +8,29 @@ const router = express.Router();
 const connectionRequests = [];
 const connections = [];
 
+function toId(value) {
+  return String(value || '');
+}
+
+function findConnectionBetween(userA, userB) {
+  const a = toId(userA);
+  const b = toId(userB);
+  return connections.find(
+    (conn) =>
+      (toId(conn.userId1) === a && toId(conn.userId2) === b) ||
+      (toId(conn.userId1) === b && toId(conn.userId2) === a)
+  );
+}
+
 // Send a connection request
 router.post('/request', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
-    const senderId = req.user.id;
+    const senderId = toId(req.user.id);
     const senderRole = req.user.role;
     const { investorId, startupId } = req.body;
     
     // Determine recipient based on sender role
-    const recipientId = senderRole === 'startup' ? investorId : startupId;
+    const recipientId = toId(senderRole === 'startup' ? investorId : startupId);
     
     if (!recipientId) {
       return res.status(400).json({ message: 'Recipient ID is required' });
@@ -24,7 +38,10 @@ router.post('/request', auth(['startup', 'investor', 'admin']), async (req, res)
     
     // Check if connection request already exists
     const existingRequest = connectionRequests.find(
-      req => req.senderId === senderId && req.recipientId === recipientId
+      (req) =>
+        toId(req.senderId) === senderId &&
+        toId(req.recipientId) === recipientId &&
+        req.status === 'pending'
     );
     
     if (existingRequest) {
@@ -32,10 +49,7 @@ router.post('/request', auth(['startup', 'investor', 'admin']), async (req, res)
     }
     
     // Check if already connected
-    const alreadyConnected = connections.find(
-      conn => (conn.userId1 === senderId && conn.userId2 === recipientId) ||
-              (conn.userId1 === recipientId && conn.userId2 === senderId)
-    );
+    const alreadyConnected = findConnectionBetween(senderId, recipientId);
     
     if (alreadyConnected) {
       return res.status(400).json({ message: 'Already connected' });
@@ -67,10 +81,10 @@ router.post('/request', auth(['startup', 'investor', 'admin']), async (req, res)
 // Get incoming connection requests
 router.get('/requests/incoming', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const incoming = connectionRequests.filter(
-      req => req.recipientId === userId && req.status === 'pending'
+      (req) => toId(req.recipientId) === userId && req.status === 'pending'
     );
     
     res.json(incoming);
@@ -82,10 +96,10 @@ router.get('/requests/incoming', auth(['startup', 'investor', 'admin']), async (
 // Get outgoing connection requests
 router.get('/requests/outgoing', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const outgoing = connectionRequests.filter(
-      req => req.senderId === userId
+      (req) => toId(req.senderId) === userId
     );
     
     res.json(outgoing);
@@ -98,10 +112,10 @@ router.get('/requests/outgoing', auth(['startup', 'investor', 'admin']), async (
 router.post('/accept/:requestId', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
     const { requestId } = req.params;
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const request = connectionRequests.find(
-      req => req.id === requestId && req.recipientId === userId
+      (req) => toId(req.id) === toId(requestId) && toId(req.recipientId) === userId
     );
     
     if (!request) {
@@ -139,10 +153,10 @@ router.post('/accept/:requestId', auth(['startup', 'investor', 'admin']), async 
 router.post('/reject/:requestId', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
     const { requestId } = req.params;
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const request = connectionRequests.find(
-      req => req.id === requestId && req.recipientId === userId
+      (req) => toId(req.id) === toId(requestId) && toId(req.recipientId) === userId
     );
     
     if (!request) {
@@ -166,10 +180,10 @@ router.post('/reject/:requestId', auth(['startup', 'investor', 'admin']), async 
 // Get all connections for a user
 router.get('/my-connections', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const userConnections = connections.filter(
-      conn => conn.userId1 === userId || conn.userId2 === userId
+      (conn) => toId(conn.userId1) === userId || toId(conn.userId2) === userId
     );
     
     res.json(userConnections);
@@ -182,11 +196,12 @@ router.get('/my-connections', auth(['startup', 'investor', 'admin']), async (req
 router.delete('/:connectionId', auth(['startup', 'investor', 'admin']), async (req, res) => {
   try {
     const { connectionId } = req.params;
-    const userId = req.user.id;
+    const userId = toId(req.user.id);
     
     const connectionIndex = connections.findIndex(
-      conn => conn.id === connectionId && 
-              (conn.userId1 === userId || conn.userId2 === userId)
+      (conn) =>
+        toId(conn.id) === toId(connectionId) &&
+        (toId(conn.userId1) === userId || toId(conn.userId2) === userId)
     );
     
     if (connectionIndex === -1) {
@@ -196,6 +211,85 @@ router.delete('/:connectionId', auth(['startup', 'investor', 'admin']), async (r
     connections.splice(connectionIndex, 1);
     
     res.json({ message: 'Connection removed successfully' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.get('/status/:targetUserId', auth(['startup', 'investor', 'admin']), async (req, res) => {
+  try {
+    const userId = toId(req.user.id);
+    const targetUserId = toId(req.params.targetUserId);
+
+    if (!targetUserId) {
+      return res.status(400).json({ message: 'Target user id is required' });
+    }
+
+    if (userId === targetUserId) {
+      return res.json({
+        relationship: 'self',
+        isConnected: false,
+        outgoingPending: false,
+        incomingPending: false,
+        connectionId: null,
+        requestId: null,
+        myConnectionCount: connections.filter((conn) => toId(conn.userId1) === userId || toId(conn.userId2) === userId).length,
+        targetConnectionCount: connections.filter((conn) => toId(conn.userId1) === targetUserId || toId(conn.userId2) === targetUserId).length
+      });
+    }
+
+    const existingConnection = findConnectionBetween(userId, targetUserId);
+    const outgoingRequest = connectionRequests.find(
+      (req) => toId(req.senderId) === userId && toId(req.recipientId) === targetUserId && req.status === 'pending'
+    );
+    const incomingRequest = connectionRequests.find(
+      (req) => toId(req.senderId) === targetUserId && toId(req.recipientId) === userId && req.status === 'pending'
+    );
+
+    const relationship = existingConnection
+      ? 'connected'
+      : outgoingRequest
+      ? 'outgoing_pending'
+      : incomingRequest
+      ? 'incoming_pending'
+      : 'none';
+
+    res.json({
+      relationship,
+      isConnected: Boolean(existingConnection),
+      outgoingPending: Boolean(outgoingRequest),
+      incomingPending: Boolean(incomingRequest),
+      connectionId: existingConnection ? toId(existingConnection.id) : null,
+      requestId: outgoingRequest ? toId(outgoingRequest.id) : incomingRequest ? toId(incomingRequest.id) : null,
+      myConnectionCount: connections.filter((conn) => toId(conn.userId1) === userId || toId(conn.userId2) === userId).length,
+      targetConnectionCount: connections.filter((conn) => toId(conn.userId1) === targetUserId || toId(conn.userId2) === targetUserId).length
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete('/request/:requestId', auth(['startup', 'investor', 'admin']), async (req, res) => {
+  try {
+    const userId = toId(req.user.id);
+    const requestId = toId(req.params.requestId);
+
+    const request = connectionRequests.find(
+      (req) => toId(req.id) === requestId && req.status === 'pending'
+    );
+
+    if (!request) {
+      return res.status(404).json({ message: 'Connection request not found' });
+    }
+
+    if (toId(request.senderId) !== userId) {
+      return res.status(403).json({ message: 'Only sender can withdraw request' });
+    }
+
+    request.status = 'withdrawn';
+    request.withdrawnAt = new Date();
+
+    res.json({ message: 'Connection request withdrawn' });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

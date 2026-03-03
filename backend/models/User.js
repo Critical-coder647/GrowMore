@@ -15,6 +15,12 @@ const userSchema = new mongoose.Schema({
   industriesInterestedIn: [{ type: String }],
   stagePreferences: [{ type: String }],
   location: { type: String },
+  website: { type: String },
+  phone: { type: String },
+  headline: { type: String },
+  bio: { type: String },
+  linkedin: { type: String },
+  twitter: { type: String },
   pastActivity: [{ type: String }]
 }, { timestamps: true });
 

@@ -17,6 +17,17 @@ const startupSchema = new mongoose.Schema({
   description: { type: String },
   pitchDeckPath: { type: String },
   logoPath: { type: String },
+  fundingProposal: {
+    targetAmount: { type: Number, default: 0 },
+    minTicket: { type: Number, default: 0 },
+    stage: { type: String },
+    valuation: { type: String },
+    elevatorPitch: { type: String },
+    summary: { type: String },
+    shareToFeed: { type: Boolean, default: false },
+    status: { type: String, default: 'active' },
+    createdAt: { type: Date }
+  },
   keywords: [{ type: String }],
   owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   aiMatches: [matchSchema]
