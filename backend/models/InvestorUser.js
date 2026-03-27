@@ -34,6 +34,7 @@ const investorUserSchema = new mongoose.Schema({
   verificationReviewedAt: { type: Date },
   verificationReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   verificationNote: { type: String },
+  lastSeenAt: { type: Date, default: null },
   suspendedUntil: { type: Date },
   suspensionReason: { type: String }
 }, { timestamps: true });

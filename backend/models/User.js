@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema({
   bio: { type: String },
   linkedin: { type: String },
   twitter: { type: String },
-  pastActivity: [{ type: String }]
+  pastActivity: [{ type: String }],
+  lastSeenAt: { type: Date, default: null }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

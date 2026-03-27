@@ -7,6 +7,7 @@ import { InvestorUser } from '../models/InvestorUser.js';
 import { User } from '../models/User.js';
 
 const router = express.Router();
+const ACTIVE_WINDOW_MS = 2 * 60 * 1000;
 
 function mapSenderType(role) {
   if (role === 'startup') return 'StartupUser';
@@ -16,9 +17,9 @@ function mapSenderType(role) {
 
 async function resolveUserById(id) {
   const [startup, investor, user] = await Promise.all([
-    StartupUser.findById(id).select('name role companyName'),
-    InvestorUser.findById(id).select('name role firmName'),
-    User.findById(id).select('name role')
+    StartupUser.findById(id).select('name role companyName lastSeenAt'),
+    InvestorUser.findById(id).select('name role firmName lastSeenAt'),
+    User.findById(id).select('name role lastSeenAt')
   ]);
 
   const record = startup || investor || user;
@@ -28,7 +29,11 @@ async function resolveUserById(id) {
     id: String(record._id),
     name: record.name,
     role: record.role,
-    subtitle: startup?.companyName || investor?.firmName || record.role
+    subtitle: startup?.companyName || investor?.firmName || record.role,
+    lastSeenAt: record.lastSeenAt || null,
+    isActive: record.lastSeenAt
+      ? Date.now() - new Date(record.lastSeenAt).getTime() <= ACTIVE_WINDOW_MS
+      : false
   };
 }
 
@@ -72,7 +77,9 @@ router.get('/conversations', auth(['startup', 'investor', 'admin']), async (req,
           ...base,
           partnerName: partner.name,
           partnerRole: partner.role,
-          partnerSubtitle: partner.subtitle
+          partnerSubtitle: partner.subtitle,
+          partnerLastSeenAt: partner.lastSeenAt,
+          partnerIsActive: partner.isActive
         };
       })
       .filter(Boolean)

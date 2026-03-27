@@ -11,6 +11,14 @@ function Settings({ user, go, logout, onUserUpdated }) {
   const [profileData, setProfileData] = useState({
     firstName: user?.name?.split(' ')[0] || '',
     lastName: user?.name?.split(' ')[1] || '',
+    companyName: '',
+    location: '',
+    founders: '',
+    stage: '',
+    fundingRequirementMin: '',
+    fundingRequirementMax: '',
+    problemStatement: '',
+    solution: '',
     headline: '',
     bio: '',
     email: user?.email || '',
@@ -34,6 +42,14 @@ function Settings({ user, go, logout, onUserUpdated }) {
           ...prev,
           firstName,
           lastName,
+          companyName: me.companyName || '',
+          location: me.location || '',
+          founders: Array.isArray(me.founders) ? me.founders.join(', ') : '',
+          stage: me.stage || '',
+          fundingRequirementMin: String(me.fundingRequirement?.min ?? ''),
+          fundingRequirementMax: String(me.fundingRequirement?.max ?? ''),
+          problemStatement: me.problemStatement || '',
+          solution: me.solution || '',
           headline: me.headline || '',
           bio: me.bio || me.description || me.thesis || '',
           email: me.email || '',
@@ -568,6 +584,102 @@ function Settings({ user, go, logout, onUserUpdated }) {
                   </div>
                 </div>
               </div>
+
+              {user?.role === 'startup' && (
+                <div className="bg-white dark:bg-[#1a1f26] rounded-xl p-6 mb-6 border border-slate-200 dark:border-slate-700">
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Startup Profile Details</h2>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Company Name</label>
+                      <input
+                        type="text"
+                        value={profileData.companyName}
+                        onChange={(e) => setProfileData({ ...profileData, companyName: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        placeholder="TechFlow AI"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Location</label>
+                      <input
+                        type="text"
+                        value={profileData.location}
+                        onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        placeholder="San Francisco, CA"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Founders (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={profileData.founders}
+                      onChange={(e) => setProfileData({ ...profileData, founders: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                      placeholder="Sarah Chen, David Park"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Funding Stage</label>
+                      <input
+                        type="text"
+                        value={profileData.stage}
+                        onChange={(e) => setProfileData({ ...profileData, stage: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        placeholder="Series A"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Funding Min</label>
+                      <input
+                        type="number"
+                        value={profileData.fundingRequirementMin}
+                        onChange={(e) => setProfileData({ ...profileData, fundingRequirementMin: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        placeholder="50000"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Funding Max</label>
+                      <input
+                        type="number"
+                        value={profileData.fundingRequirementMax}
+                        onChange={(e) => setProfileData({ ...profileData, fundingRequirementMax: e.target.value })}
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                        placeholder="5000000"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Problem Statement</label>
+                      <textarea
+                        value={profileData.problemStatement}
+                        onChange={(e) => setProfileData({ ...profileData, problemStatement: e.target.value })}
+                        rows="4"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                        placeholder="Describe the core problem your startup solves"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Solution</label>
+                      <textarea
+                        value={profileData.solution}
+                        onChange={(e) => setProfileData({ ...profileData, solution: e.target.value })}
+                        rows="4"
+                        className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                        placeholder="Describe your solution and value proposition"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Save Button */}
               <div className="flex items-center justify-between bg-white dark:bg-[#1a1f26] rounded-xl p-6 border border-slate-200 dark:border-slate-700">

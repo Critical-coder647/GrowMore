@@ -125,7 +125,14 @@ router.put('/profile', protect, async (req, res) => {
       linkedin,
       twitter,
       website,
-      location
+      location,
+      companyName,
+      founders,
+      stage,
+      fundingRequirementMin,
+      fundingRequirementMax,
+      problemStatement,
+      solution
     } = req.body || {};
 
     if (typeof firstName === 'string' || typeof lastName === 'string') {
@@ -163,6 +170,37 @@ router.put('/profile', protect, async (req, res) => {
 
     if (req.user.role === 'startup' && typeof bio === 'string') {
       user.description = bio.trim();
+    }
+    if (req.user.role === 'startup' && typeof companyName === 'string') {
+      user.companyName = companyName.trim();
+    }
+    if (req.user.role === 'startup' && typeof stage === 'string') {
+      user.stage = stage.trim();
+    }
+    if (req.user.role === 'startup' && typeof problemStatement === 'string') {
+      user.problemStatement = problemStatement.trim();
+    }
+    if (req.user.role === 'startup' && typeof solution === 'string') {
+      user.solution = solution.trim();
+    }
+    if (req.user.role === 'startup') {
+      const parsedMin = Number(fundingRequirementMin);
+      const parsedMax = Number(fundingRequirementMax);
+
+      const currentFunding = user.fundingRequirement || { min: 0, max: 0 };
+      user.fundingRequirement = {
+        min: Number.isFinite(parsedMin) ? parsedMin : Number(currentFunding.min || 0),
+        max: Number.isFinite(parsedMax) ? parsedMax : Number(currentFunding.max || 0)
+      };
+
+      if (typeof founders === 'string') {
+        user.founders = founders
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(founders)) {
+        user.founders = founders.map((item) => String(item).trim()).filter(Boolean);
+      }
     }
     if (req.user.role === 'investor' && typeof bio === 'string') {
       user.thesis = bio.trim();

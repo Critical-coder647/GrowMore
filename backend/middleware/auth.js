@@ -4,6 +4,11 @@ import { StartupUser } from '../models/StartupUser.js';
 import { InvestorUser } from '../models/InvestorUser.js';
 import { User } from '../models/User.js';
 
+async function touchLastSeen(user) {
+  const model = user.role === 'startup' ? StartupUser : user.role === 'investor' ? InvestorUser : User;
+  await model.updateOne({ _id: user.id }, { $set: { lastSeenAt: new Date() } }).catch(() => null);
+}
+
 export async function protect(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -14,6 +19,7 @@ export async function protect(req, res, next) {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decoded;
     if (req.user.role === 'admin') {
+      await touchLastSeen(req.user);
       return next();
     }
     const model = req.user.role === 'startup' ? StartupUser : req.user.role === 'investor' ? InvestorUser : User;
@@ -21,6 +27,8 @@ export async function protect(req, res, next) {
     if (record?.suspendedUntil && new Date(record.suspendedUntil) > new Date()) {
       return res.status(403).json({ message: 'Account suspended' });
     }
+
+    await touchLastSeen(req.user);
     return next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid token' });
@@ -28,7 +36,7 @@ export async function protect(req, res, next) {
 }
 
 export function auth(requiredRoles = []) {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     const header = req.headers.authorization;
     if (!header || !header.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'No token' });
@@ -40,6 +48,7 @@ export function auth(requiredRoles = []) {
       if (requiredRoles.length && !requiredRoles.includes(req.user.role)) {
         return res.status(403).json({ message: 'Forbidden' });
       }
+      await touchLastSeen(req.user);
       next();
     } catch (err) {
       return res.status(401).json({ message: 'Invalid token' });
